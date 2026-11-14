@@ -25,7 +25,7 @@
 # Then it prints the address, and stops until both names point at it (deploy/cloudflare/dns.sh):
 # Let's Encrypt allows only a few failed tries an hour. Run it again after that, and it copies
 # deploy/compose.public.yaml and the secrets to /opt/agents on the VM, has the VM pull the
-# release's image, ghcr.io/alexec/agents-control:<version> (#2140), which carries the Linux host
+# release's image, ghcr.io/agentloops-dev/agents-control:<version> (#2140), which carries the Linux host
 # for servers that join, and starts the control plane and Caddy there. --build is for a commit
 # no release has: it builds the image (linux/amd64) here, from this checkout, and copies it. The VM has no service
 # account file (an empty one): it uses the key as its own service account.
@@ -274,7 +274,7 @@ fi
 if ((!build)); then
 	say "== the image, pulled on the VM: $image:$tag"
 	vm_ssh "$compose pull --quiet control" ||
-		die "the VM could not pull $image:$tag: is the package public (github.com/alexec/Agents/pkgs/container/agents-control)? Or give --build"
+		die "the VM could not pull $image:$tag: is the package public (github.com/orgs/agentloops-dev/packages/container/package/agents-control)? Or give --build"
 fi
 
 say "== the control plane and Caddy"

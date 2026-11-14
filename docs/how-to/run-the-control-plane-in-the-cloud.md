@@ -19,7 +19,7 @@ copies](run-several-copies.md).
 ## Before you start
 
 - Nothing to build or clone. Each release of Agent Loops publishes the control plane as a
-  signed image, `ghcr.io/alexec/agents-control:<version>`, for x86-64 and ARM64. It
+  signed image, `ghcr.io/agentloops-dev/agents-control:<version>`, for x86-64 and ARM64. It
   carries the Linux host that it hands to servers that join, and the files to run it
   with. See [The image](#the-image).
 - A Linux machine you rent, on x86-64 or ARM64, with Docker and Docker Compose. The
@@ -135,7 +135,7 @@ In the repository on your Mac:
 5. Get the first code with the command that `up.sh` prints, then go on at
    [Pair your first window](#pair-your-first-window).
 
-`up.sh` runs the release in `AGENTS_VERSION`, such as `0.11.0`. Without it,
+`up.sh` runs the release in `AGENTS_VERSION`, such as `0.19.0`. Without it,
 `scripts/version.sh` says, which is a release's version only in a checkout of its tag. For
 a commit that no release has, give `--build`: it builds the image on your Mac from the
 checkout, stamps that version on it, and copies it to the machine.
@@ -248,10 +248,10 @@ On your computer, or in Google Cloud Shell, with `gcloud` (put your Google Cloud
 ### Get what it runs
 
 On the machine, in a folder of its own such as `~/agents`, take the files to run it with out
-of the release's image (here 0.11.0):
+of the release's image (here 0.19.0):
 
 ```sh
-docker create --name agents-files ghcr.io/alexec/agents-control:0.11.0
+docker create --name agents-files ghcr.io/agentloops-dev/agents-control:0.19.0
 docker cp agents-files:/deploy ./deploy
 docker rm agents-files
 ```
@@ -304,11 +304,11 @@ On the machine, in the folder you copied to:
    AGENTS_DOMAIN=agents.example.com
    AGENTS_VIEWS_DOMAIN=views.example.com
    ACME_EMAIL=you@example.com
-   AGENTS_VERSION=0.11.0
+   AGENTS_VERSION=0.19.0
    ```
 
    Caddy gets a certificate for each name. `AGENTS_VERSION` is the image's tag: a release
-   such as `0.11.0`, `0.11` for the newest 0.11 release, or `latest`. Without it, `latest`.
+   such as `0.19.0`, `0.19` for the newest 0.19 release, or `latest`. Without it, `latest`.
 
 2. Get the image, and start the control plane and Caddy:
 
@@ -747,8 +747,8 @@ Then make a machine there that starts from that disk, with the flags of `up.sh`'
 
 ## The image
 
-Each release pushes `ghcr.io/alexec/agents-control` from the release workflow (#2140), for
-`linux/amd64` and `linux/arm64`, with three tags: `0.11.0`, `0.11` and `latest`. All in it is
+Each release pushes `ghcr.io/agentloops-dev/agents-control` from the release workflow (#2140), for
+`linux/amd64` and `linux/arm64`, with three tags: `0.19.0`, `0.19` and `latest`. All in it is
 of the same version:
 
 | Path | What it is |
@@ -763,8 +763,8 @@ It is signed with cosign, keyless: the signature names the release workflow that
 it. Check it before you run it:
 
 ```sh
-cosign verify ghcr.io/alexec/agents-control:0.11.0 \
-    --certificate-identity-regexp '^https://github\.com/alexec/Agents/\.github/workflows/release\.yml@' \
+cosign verify ghcr.io/agentloops-dev/agents-control:0.19.0 \
+    --certificate-identity-regexp '^https://github\.com/agentloops-dev/agent-loops/\.github/workflows/release\.yml@' \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
@@ -772,8 +772,8 @@ The image also carries an SBOM (SPDX) and its build's provenance (SLSA), as Buil
 attestations. To read them:
 
 ```sh
-docker buildx imagetools inspect ghcr.io/alexec/agents-control:0.11.0 --format '{{ json .SBOM }}'
-docker buildx imagetools inspect ghcr.io/alexec/agents-control:0.11.0 --format '{{ json .Provenance }}'
+docker buildx imagetools inspect ghcr.io/agentloops-dev/agents-control:0.19.0 --format '{{ json .SBOM }}'
+docker buildx imagetools inspect ghcr.io/agentloops-dev/agents-control:0.19.0 --format '{{ json .Provenance }}'
 ```
 
 The image is public, and pulling it needs no account. If the repository becomes private
@@ -786,7 +786,7 @@ one, and `apk add` them.
 ## If it doesn't work
 
 - **`docker compose pull` says `manifest unknown`.** No release has that
-  `AGENTS_VERSION`. Give a release's version, such as `0.11.0`, or `latest`.
+  `AGENTS_VERSION`. Give a release's version, such as `0.19.0`, or `latest`.
 
 - **The control plane stops at start with `could not find default credentials`.** It has no
   right to use the Cloud KMS key: `deploy/secrets/gcp-service-account` is empty and the
