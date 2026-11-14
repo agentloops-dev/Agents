@@ -184,3 +184,55 @@ func TestJobDeploysAreTheJobsNotices(t *testing.T) {
 	equal(t, err, error(nil), "no error")
 	equal(t, got, []string{"testflight=testflight:com.example.app/42"}, "the deploy notice")
 }
+
+// #5407: deploy.waiting's details carry the Deployment that waits, as the wire's DeployEvent: of
+// the run's sha and environment, its newest status waiting, its url the run's; none when GitHub
+// has made none yet.
+func TestDeployWaitingCarriesItsDeployment(t *testing.T) {
+	h := newHarness(t)
+	args := map[string]any{"repo": repo}
+	first := h.poll("deploy.waiting", args, nil)
+	const id = 7639582620
+	sha := fmt.Sprintf("sha%d", id)
+	otherRun := status(14, "waiting", h.at(3), 60)
+	otherRun.URL = "https://github.com/" + repo + "/actions/runs/8/job/60"
+	h.fake.mu.Lock()
+	h.fake.deployments = []Deployment{
+		deployment(id, "app-store", "v0.20.0", true, status(11, "waiting", h.at(2), 52)),
+		// The same sha's: one that went on, and one of another run, though newer.
+		{ID: id + 1, SHA: sha, Ref: "v0.20.0", Environment: "app-store", Production: true, Created: h.at(1), Updated: h.at(3),
+			Statuses: []DeploymentStatus{status(12, "waiting", h.at(1), 53), status(13, "queued", h.at(3), 53)}},
+		{ID: id + 2, SHA: sha, Ref: "v0.20.0", Environment: "app-store", Production: true, Created: h.at(3), Updated: h.at(3),
+			Statuses: []DeploymentStatus{otherRun}},
+	}
+	h.fake.waiting = []WaitingDeploy{{Run: CompletedRun{Run: RunRef{ID: 7, Attempt: 1, Name: "Release",
+		URL: "https://github.com/" + repo + "/actions/runs/7", HeadSHA: sha, Branch: "v0.20.0", UpdatedAt: h.at(4), CreatedAt: h.at(0)},
+		Workflow: "release.yml", Event: "push", Actor: "alexec", Trusted: true},
+		Environments: []Environment{{ID: 11, Name: "app-store"}}, Reviewers: []string{"alexec"}, CanApprove: true}}
+	h.fake.mu.Unlock()
+
+	raised := h.poll("deploy.waiting", args, first["cursor"])
+	equal(t, ids(raised), []string{"deploy.waiting:" + repo + ":7:1:11"}, "ids")
+	data := eventsOf(raised)[0]["data"].(map[string]any)
+	equal(t, data["canApprove"], true, "its own fields stay")
+	equal(t, data["component"], repo, "component")
+	equal(t, data["environment"], "app-store", "environment")
+	equal(t, data["tier"], "production", "tier")
+	d := data["deploy"].(map[string]any)
+	equal(t, d["ref"], fmt.Sprintf("github:deploy:%s#%d", repo, id), "the run's own Deployment that waits")
+	equal(t, d["state"], "waiting", "state")
+	equal(t, d["rawState"], "waiting", "raw state")
+	equal(t, d["version"].(map[string]any)["name"], "v0.20.0", "version")
+	_, started := d["started"]
+	_, finished := d["finished"]
+	equal(t, started || finished, false, "a waiting deploy has not started or finished")
+
+	h.fake.mu.Lock()
+	h.fake.deployments = nil
+	h.fake.waiting[0].Environments = []Environment{{ID: 12, Name: "store"}}
+	h.fake.mu.Unlock()
+	next := h.poll("deploy.waiting", args, raised["cursor"])
+	equal(t, ids(next), []string{"deploy.waiting:" + repo + ":7:1:12"}, "the next environment")
+	_, has := eventsOf(next)[0]["data"].(map[string]any)["deploy"]
+	equal(t, has, false, "no Deployment yet: no deploy")
+}
