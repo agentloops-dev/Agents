@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	// The control plane's server can have no zone files; a report's time zone must read the
+	// same there as on a Mac (#5515, as agentsd's #4818).
+	_ "time/tzdata"
+
 	"github.com/agentloops-dev/agent-loops/Go/wire"
 )
 
