@@ -300,7 +300,7 @@ export function PageView({ store, page, down }: { store: Store; page: NavPage; d
         : page.draw.kind === "console" ? <ConsoleSection store={store} id={page.draw.id} down={down} />
         : page.draw.kind === "report" ? <ReportsPage store={store} section={page.draw.section} down={down} />
         : page.draw.kind === "builds" ? <BuildsPage store={store} down={down} />
-        : page.draw.kind === "deploys" ? <DeliveryPage store={store} down={down} />
+        : page.draw.kind === "delivery" ? <DeliveryPage store={store} down={down} />
         : page.draw.kind === "machines" ? (admin === true ? <MachinesPage store={store} down={down} /> : <YourMachines store={store} />)
         : page.draw.kind === "workflows" ? <AllWorkflows store={store} down={down} />
         : page.draw.kind === "usage" ? <Usage store={store} />

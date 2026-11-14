@@ -24,7 +24,7 @@ export type PageDraw =
   | { kind: "console"; id: string }
   | { kind: "report"; section: Section }
   | { kind: "builds" }
-  | { kind: "deploys" }
+  | { kind: "delivery" }
   | { kind: "work"; work: WorkKind }
   | { kind: "features" }
   | { kind: "timeline" }
@@ -95,7 +95,7 @@ export const navPages: Record<NavSection, readonly NavPage[]> = {
       // #/reports/value/builds, #/reports/value/delivery.
       ...s.id === "value" ? [
         { id: "builds", title: "Builds", group: s.group, under: "value", draw: { kind: "builds" } },
-        { id: "delivery", title: "Delivery", group: s.group, under: "value", draw: { kind: "deploys" } },
+        { id: "delivery", title: "Delivery", group: s.group, under: "value", draw: { kind: "delivery" } },
       ] satisfies NavPage[] : [],
     ]),
     // The Multiplier page first (#3990), as the window's first row under Usage; it took the Achievements page's place.
