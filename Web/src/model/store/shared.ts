@@ -2,7 +2,7 @@
 // ported by hand for the notifications the web remote hears and held to Fixtures/web/reducer
 // (research R7). Nothing here decides anything; the hosts do.
 import { pageSize } from "../archivedPage";
-import type { Agent, TranscriptEntry, TurnSummary, JSONValue, Request as PersonRequest } from "../../protocol/generated";
+import type { Agent, ControlMachine, MachineList, TranscriptEntry, TurnSummary, JSONValue, Request as PersonRequest } from "../../protocol/generated";
 import { isPersonsAsk, storedTurn, type ChatTurn } from "../turns";
 import { folds } from "../folds";
 import { pruneProjectFolders } from "../projects";
@@ -196,3 +196,8 @@ export function byAsked(a: PersonRequest, b: PersonRequest): number {
   return a.askedAt < b.askedAt ? -1 : a.askedAt > b.askedAt ? 1 : 0;
 }
 
+
+/** The machines of a machines/list answer: the plain array of one with no query, or a page's rows (#5283). */
+export function machineRows(answer: ControlMachine[] | MachineList): ControlMachine[] {
+  return Array.isArray(answer) ? answer : answer.machines;
+}

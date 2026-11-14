@@ -139,6 +139,7 @@ const CapMachineAccounts2 = "machine.accounts/2"
 const CapMachineUsage1 = "machine.usage/1"
 const CapMachine1 = "machine/1"
 const CapMachines1 = "machines/1"
+const CapMachines2 = "machines/2"
 const CapMailbox1 = "mailbox/1"
 const CapMarketplaces1 = "marketplaces/1"
 const CapMcpToolLevels1 = "mcp.tool-levels/1"
@@ -889,8 +890,8 @@ var ControlCapabilities = pairs([][2]string{
 	{"machines/lendGit", "machines/1"},
 	{"machines/lendSignIn", "machines/1"},
 	{"machines/link", "machines/1"},
-	{"machines/list", "machines/1"},
-	{"machines/listKept", "machines/1"},
+	{"machines/list", "machines/2"},
+	{"machines/listKept", "machines/2"},
 	{"machines/projectFolders", "sessions.project/1"},
 	{"machines/projectSessions", "sessions.project/1"},
 	{"machines/remove", "machines/1"},

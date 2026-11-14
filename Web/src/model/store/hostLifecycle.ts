@@ -9,7 +9,7 @@ import { hostAnswers } from "../capabilities";
 import { Capability } from "../../protocol/capabilities.generated";
 import { markOnce } from "../marks";
 import type { Store } from "../store";
-import { pruneFolderKeys, searchShown, byAsked } from "./shared";
+import { pruneFolderKeys, searchShown, byAsked, machineRows } from "./shared";
 
 export const hostLifecycleMethods = {
   onHost(this: Store, host: string, work: () => Promise<void>): Promise<void> {
@@ -64,7 +64,7 @@ export const hostLifecycleMethods = {
   },
   async reloadHost(this: Store, host: string): Promise<void> {
     const hosts = await this.link.call("machines/list", {});
-    this.takeHosts(hosts);
+    this.takeHosts(machineRows(hosts));
     await this.onHost(host, async () => {
       const now = this.hosts.value.find((h) => h.id === host);
       if (!now) return this.forgetHost(host);

@@ -6139,6 +6139,21 @@ export interface KeptDelivered {
 
 export interface KeptList {
   kept: KeptRequest[];
+  /** The cursor of the next page; absent on the last (#5283). */
+  next?: string;
+  /** For each kind, how many kept requests match the other filters (#5283). */
+  counts?: { kind: Record<string, number> };
+}
+
+/**
+ * machines/listKept (#5283): optional. `query` matches the text, kind or machine; `kind` one kind;
+ * `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.
+ */
+export interface KeptListQuery {
+  query?: string;
+  kind?: string;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface KeptRequest {
@@ -8018,6 +8033,19 @@ export interface MachineClients {
 }
 
 /**
+ * For each filter, how many machines have each of its values, among those every other filter lets
+ * through (so a chip says what picking it would show). A machine with no value for a filter is not
+ * counted in it.
+ */
+export interface MachineCounts {
+  state: Record<string, number>;
+  labels: Record<string, number>;
+  provider: Record<string, number>;
+  os: Record<string, number>;
+  version: Record<string, number>;
+}
+
+/**
  * machines/startEnroll (#1761): with as, a bot's machine code, an admin's only. Without, the
  * caller's own, as before.
  */
@@ -8192,6 +8220,37 @@ export interface MachineLink {
   startWhenUsed?: boolean;
   stopWhenIdleMinutes?: number;
   trust?: string;
+}
+
+/**
+ * machines/list (#5283) when it was given a query: a page of machines, the cursor of the next page
+ * (absent on the last), how many match in all, and the counts for each filter's values.
+ */
+export interface MachineList {
+  machines: ControlMachine[];
+  next?: string;
+  total: number;
+  counts: MachineCounts;
+}
+
+/**
+ * machines/list (#5283): what to show, as the Machines page asks for it. Every field is optional;
+ * with none, the answer is the plain array of up to 200 machines, as before. `query` matches a
+ * name, id or label, any case. `state`, `provider`, `os` and `version` each match one value;
+ * `labels` matches a machine that has every one. `sort` is name (the default), state, lastSeen
+ * (latest first) or version. `limit` is 1 to 200 (default 200); `cursor` is the previous answer's
+ * `next`.
+ */
+export interface MachineListQuery {
+  query?: string;
+  state?: string;
+  labels?: string[];
+  provider?: string;
+  os?: string;
+  version?: string;
+  sort?: "name" | "state" | "lastSeen" | "version";
+  limit?: number;
+  cursor?: string;
 }
 
 /** machines/setMachineOptions. stopWhenIdleMinutes 0 turns it off. */
@@ -16048,8 +16107,8 @@ export interface Methods {
   "machines/lastHeard": { params: MachineRequest; result: MachineLastHeard };
   "machines/lendGit": { params: LendGit; result: Empty };
   "machines/link": { params: MachineLink; result: ControlMachine };
-  "machines/list": { params: Empty; result: ControlMachine[] };
-  "machines/listKept": { params: Empty; result: KeptList };
+  "machines/list": { params: MachineListQuery; result: ControlMachine[] | MachineList };
+  "machines/listKept": { params: KeptListQuery; result: KeptList };
   "machines/remove": { params: MachineRequest; result: Empty };
   "machines/retryKept": { params: KeptRequestID; result: Empty };
   "machines/setMachineOptions": { params: MachineOptions; result: ControlMachine };
@@ -17262,7 +17321,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   JoinedFolder: { required: ["folder", "name", "project"], optional: [] },
   KeepRequest: { required: ["host", "method", "params"], optional: ["signed"] },
   KeptDelivered: { required: ["host", "id"], optional: ["agentID"] },
-  KeptList: { required: ["kept"], optional: [] },
+  KeptList: { required: ["kept"], optional: ["next", "counts"] },
+  KeptListQuery: { required: [], optional: ["query", "kind", "limit", "cursor"] },
   KeptRequest: { required: ["id", "host", "kind", "text", "at"], optional: ["agentID", "folder", "runtimeID", "failed"] },
   KeptRequestID: { required: ["host", "id"], optional: [] },
   LabelVocabularyRequest: { required: ["folder"], optional: [] },
@@ -17402,6 +17462,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   MachineCatalog: { required: ["items"], optional: [] },
   MachineClient: { required: ["id", "kind", "publicKey"], optional: ["person"] },
   MachineClients: { required: ["clients"], optional: ["user"] },
+  MachineCounts: { required: ["state", "labels", "provider", "os", "version"], optional: [] },
   MachineEnroll: { required: [], optional: ["as"] },
   MachineFolderSend: { required: ["host"], optional: ["state", "upload", "receive", "facts", "pack", "read", "moveIn"] },
   MachineFolderSent: { required: [], optional: ["state", "folder", "facts", "pack", "read"] },
@@ -17415,6 +17476,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   MachineJoinTicket: { required: ["request", "code", "expires"], optional: [] },
   MachineLastHeard: { required: ["host"], optional: ["folders", "agents", "heardAt"] },
   MachineLink: { required: ["host", "provider", "workspace"], optional: ["startWhenUsed", "stopWhenIdleMinutes", "trust"] },
+  MachineList: { required: ["machines", "total", "counts"], optional: ["next"] },
+  MachineListQuery: { required: [], optional: ["query", "state", "labels", "provider", "os", "version", "sort", "limit", "cursor"] },
   MachineOptions: { required: ["host"], optional: ["startWhenUsed", "stopWhenIdleMinutes", "startForSchedules"] },
   MachinePolicy: { required: [], optional: ["policy", "signature", "none"] },
   MachineProjects: { required: ["projects"], optional: [] },

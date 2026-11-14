@@ -3820,7 +3820,7 @@
     },
     {
       "name": "machines/list",
-      "x-capability": "machines/1",
+      "x-capability": "machines/2",
       "tags": [
         {
           "name": "web"
@@ -3830,25 +3830,32 @@
       "params": [
         {
           "name": "params",
-          "required": true,
+          "required": false,
           "schema": {
-            "$ref": "schema/core.schema.json#/definitions/Empty"
+            "$ref": "schema/org.schema.json#/definitions/MachineListQuery"
           }
         }
       ],
       "result": {
         "name": "result",
         "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "schema/org.schema.json#/definitions/ControlMachine"
-          }
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "schema/org.schema.json#/definitions/ControlMachine"
+              }
+            },
+            {
+              "$ref": "schema/org.schema.json#/definitions/MachineList"
+            }
+          ]
         }
       }
     },
     {
       "name": "machines/listKept",
-      "x-capability": "machines/1",
+      "x-capability": "machines/2",
       "tags": [
         {
           "name": "web"
@@ -3858,9 +3865,9 @@
       "params": [
         {
           "name": "params",
-          "required": true,
+          "required": false,
           "schema": {
-            "$ref": "schema/core.schema.json#/definitions/Empty"
+            "$ref": "schema/workflows.schema.json#/definitions/KeptListQuery"
           }
         }
       ],
