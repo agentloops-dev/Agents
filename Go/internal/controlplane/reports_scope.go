@@ -117,6 +117,11 @@ func (s *Service) reportScopes(ctx context.Context, user string) (wire.ReportSco
 			out.Scopes = append(out.Scopes, wire.ReportScopeOption{Scope: wire.ReportScope{Kind: wire.ReportScopeKindGroup, Group: &id}, Name: g.Name})
 		}
 	}
+	// Anyone who can see a project sees its lens (Alex, 2026-11-13, #5277): every project.
+	for _, p := range s.records.Projects() {
+		id := p.ID
+		out.Scopes = append(out.Scopes, wire.ReportScopeOption{Scope: wire.ReportScope{Kind: wire.ReportScopeKindProject, Project: &id}, Name: p.Name})
+	}
 	if admin {
 		name := s.cfg.Name
 		if settings := s.records.Settings(); settings != nil && settings.Name != "" {
@@ -168,8 +173,15 @@ func (s *Service) reportScope(ctx context.Context, scope *wire.ReportScope, user
 		}
 		// A member, or a bot of the group (groups.go).
 		return scope, func(person string) bool { return person != "" && s.inGroup(person, group.ID) }, group, nil
+	case wire.ReportScopeKindProject:
+		// Every person's machines: the lens keeps the rows of the project's folders
+		// (projectRows, projectNodes), not people.
+		if scope.Project == nil || s.records.Project(*scope.Project) == nil {
+			return nil, nil, nil, fail(invalidParams, "Say a project that is there.")
+		}
+		return scope, func(string) bool { return true }, nil, nil
 	}
-	return nil, nil, nil, fail(invalidParams, "Say a scope: me, group or org.")
+	return nil, nil, nil, fail(invalidParams, "Say a scope: me, group, org or project.")
 }
 
 // scopedReport is reports/usage for a scope: the rows the caller may see, each person's
@@ -196,6 +208,7 @@ func (s *Service) scopedReport(ctx context.Context, r wire.ReportRange, scope *w
 	if err != nil {
 		return wire.UsageReport{}, err
 	}
+	rows = projectRows(rows, scope)
 	out := wire.UsageReport{Range: r, Rows: rows, Admin: admin, Scope: scope}
 	if scope.Kind != wire.ReportScopeKindMe {
 		groups := s.records.Groups()
@@ -234,4 +247,34 @@ func (s *Service) scopedReport(ctx context.Context, r wire.ReportRange, scope *w
 		}
 	}
 	return out, nil
+}
+
+// projectRows is the rows of a project lens (#5277): those whose folder is in the project,
+// on every machine. Any other scope keeps them all.
+func projectRows(rows []wire.ReportRow, scope *wire.ReportScope) []wire.ReportRow {
+	if scope == nil || scope.Kind != wire.ReportScopeKindProject || scope.Project == nil {
+		return rows
+	}
+	return slices.DeleteFunc(rows, func(r wire.ReportRow) bool { return r.Project == nil || *r.Project != *scope.Project })
+}
+
+// projectNodes is the nodes of a project lens: those in the repo ref of one of the
+// project's folders (folder:repo:#<name>, as a node of a folder with no repo says it).
+// Any other scope keeps them all. A node does not name its project (#3275), so a node
+// whose repo is a forge's is kept out until the machines stamp one.
+func (s *Service) projectNodes(ctx context.Context, nodes []wire.LineageCostNode, scope *wire.ReportScope) []wire.LineageCostNode {
+	if scope == nil || scope.Kind != wire.ReportScopeKindProject || scope.Project == nil {
+		return nodes
+	}
+	repos := map[string]bool{}
+	if joined, err := s.joinedFolders(ctx); err == nil {
+		for _, folders := range joined {
+			for _, f := range folders {
+				if f.Project == *scope.Project {
+					repos["folder:repo:#"+f.Name] = true
+				}
+			}
+		}
+	}
+	return slices.DeleteFunc(slices.Clone(nodes), func(n wire.LineageCostNode) bool { return n.Repo == nil || !repos[*n.Repo] })
 }

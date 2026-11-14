@@ -2471,6 +2471,10 @@
         "group": {
           "type": "string",
           "description": "The group's id, for kind group."
+        },
+        "project": {
+          "type": "string",
+          "description": "The project's id, for kind project (#5277): the rows whose folder is in the project, on every machine."
         }
       },
       "required": [
@@ -2483,9 +2487,10 @@
       "enum": [
         "me",
         "group",
-        "org"
+        "org",
+        "project"
       ],
-      "description": "Me (the caller's own machines), a group's people, or every person (#1804)."
+      "description": "Me (the caller's own machines), a group's people, every person (#1804), or a project's folders on every machine (#5277)."
     },
     "ReportScopeOption": {
       "type": "object",
@@ -2506,7 +2511,7 @@
     },
     "ReportScopes": {
       "type": "object",
-      "description": "reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), and the organisation for an admin.",
+      "description": "reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), every project (#5277), and the organisation for an admin.",
       "properties": {
         "scopes": {
           "type": "array",

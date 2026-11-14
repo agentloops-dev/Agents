@@ -119,6 +119,9 @@ func sameReportScope(a, b wire.ReportScope) bool {
 	if a.Kind != b.Kind {
 		return false
 	}
+	if a.Kind == wire.ReportScopeKindProject {
+		return a.Project != nil && b.Project != nil && *a.Project == *b.Project
+	}
 	if a.Kind != wire.ReportScopeKindGroup {
 		return true
 	}

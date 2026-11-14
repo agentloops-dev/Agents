@@ -133,3 +133,48 @@ func TestReportScopeMethodsNameNoMachine(t *testing.T) {
 		}
 	}
 }
+
+// A project lens (#5277): every person sees it, and it adds up the rows whose folder is in
+// the project, on every machine.
+func TestReportProjectLens(t *testing.T) {
+	t.Parallel()
+	p := startPlane(t, store.NewMemory(), controllink.NewPrivateKey())
+	p.host("OWNERS-MAC")
+	_, admin := p.client("Owner's window")
+	bea := p.invite(admin, "Bea", wire.UserRoleMember)
+	cy := p.invite(admin, "Cy", wire.UserRoleMember)
+	beas, cys := p.machine(bea, "BEAS-MAC"), p.machine(cy, "CYS-MAC")
+	var made wire.Project
+	json.Unmarshal(call(t, admin, "", "projects/set", wire.ProjectSet{Name: "Shop"}), &made)
+	day := time.Now().UTC().Format(usageDayLayout)
+	for _, h := range []*fakeHost{beas, cys} {
+		joined, _ := json.Marshal(wire.ProjectsJoined{Folders: []wire.JoinedFolder{{Folder: "file:///shop", Name: "shop", Project: made.ID}}})
+		if _, err := p.s.methods.HostSaid(h.member.Host, "projects/joined", joined); err != nil {
+			t.Fatal(err)
+		}
+		r := wire.UsageRollup{Days: []wire.UsageRollupPeriod{{At: day, Rows: []wire.UsageRollupRow{
+			{Folder: "shop", Runtime: "claude", Cost: map[string]float64{"USD": 2}, Turns: 1},
+			{Folder: "other", Runtime: "claude", Cost: map[string]float64{"USD": 5}, Turns: 1}}}}}
+		params, _ := json.Marshal(r)
+		if _, err := p.s.methods.HostSaid(h.member.Host, "usage/rollup", params); err != nil {
+			t.Fatal(err)
+		}
+	}
+	lens := &wire.ReportScope{Kind: wire.ReportScopeKindProject, Project: &made.ID}
+	var scopes wire.ReportScopes
+	json.Unmarshal(call(t, bea.window, "", "reports/scopes", map[string]any{}), &scopes)
+	if len(scopes.Scopes) != 2 || scopes.Scopes[1].Name != "Shop" || scopes.Scopes[1].Scope.Kind != wire.ReportScopeKindProject {
+		t.Fatalf("%+v", scopes)
+	}
+	// A member sees the project's rows on every machine, not the other folder's.
+	var r wire.UsageReport
+	json.Unmarshal(call(t, bea.window, "", "reports/usage", wire.ReportQuery{Range: wire.ReportRangeWeek, Scope: lens}), &r)
+	if len(r.Rows) != 2 || r.Rows[0].Folder != "shop" || r.Rows[1].Folder != "shop" || r.Scope.Kind != wire.ReportScopeKindProject {
+		t.Fatalf("%+v", r)
+	}
+	none := "nowhere"
+	if e := callError(t, bea.window, "", "reports/usage", wire.ReportQuery{Range: wire.ReportRangeWeek,
+		Scope: &wire.ReportScope{Kind: wire.ReportScopeKindProject, Project: &none}}); !strings.Contains(e, "project") {
+		t.Fatal(e)
+	}
+}
