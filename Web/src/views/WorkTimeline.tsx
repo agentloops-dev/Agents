@@ -21,13 +21,18 @@ import {
 import { go } from "../route";
 import { keepWork, keptWorkRead } from "../model/localCopy";
 import { Choice, workProjects } from "./Work";
+import { choiceFrom, choiceWords, rememberEach, remembered } from "../model/workRemembered";
 import { EmptyState, ErrorStrip, FilterMenu, FromDeviceStrip, LabelChip, PlaceholderRows, RefreshButton, StateIcon } from "./WorkParts";
 
-const range = signal<TimelineRange>("twoDays");
+// The range, the project and the board are what the Timeline had when it was last left (#5451).
+const kept = remembered("timeline");
+const range = signal<TimelineRange>(choiceFrom(kept, "range", "twoDays", timelineRanges));
 /** The project, by id; "" until one is picked, then the first one. */
-const project = signal("");
+const project = signal<string>(choiceFrom(kept, "project", ""));
 /** The board the epics are narrowed to (#3282), by its url; "" for every board. */
-const board = signal("");
+const board = signal<string>(choiceFrom(kept, "board", ""));
+rememberEach("timeline", () => choiceWords({ range: range.value, project: project.value, board: board.value },
+  { range: "twoDays", project: "", board: "" }));
 /** Where the window is: Now, until the plot is scrolled past an edge. */
 const anchor = signal(Date.now());
 const timeline = signal<Timeline | null>(null);

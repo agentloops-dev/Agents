@@ -17,6 +17,7 @@ import { boardChoices, boardName, errorWords, labelColor, noForgeHere, shortRef,
 import { ErrorStrip, FromDeviceStrip, LabelChip, PlaceholderRows, RefreshButton, StateIcon } from "./WorkParts";
 import { boardHosts, boards, forgeHosts, listHosts, loadBoards } from "../model/workLists";
 import { Choice } from "./Work";
+import { choiceFrom, choiceWords, rememberEach, remembered } from "../model/workRemembered";
 import {
   type Delivery, type FeatureGroup, type InFlight, addDelivery, deliveryShares, deliveryWords, epicLead, epicsDone, epicsDoneWords,
   featureFlight, featureFlightWords, featureGroups, featureSessions, featureTitle, flightOrder, flightShown, flightShownPhone, groupWords,
@@ -47,8 +48,9 @@ const itemReads = new Set<string>();
 const asked = signal(0);
 /** Whether a read of the features runs, for Refresh's spin. */
 const reading = signal(false);
-/** The board chosen, by its url; empty for all. */
-const board = signal("");
+/** The board chosen, by its url; empty for all. It opens with the board it had when last left (#5451). */
+const board = signal<string>(choiceFrom(remembered("features"), "board", ""));
+rememberEach("features", () => choiceWords({ board: board.value }, { board: "" }));
 let read: string | undefined;
 /** The features on screen came from this device's copy (#4930), until the machines answer. */
 const fromDevice = signal(false);

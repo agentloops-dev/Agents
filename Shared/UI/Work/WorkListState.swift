@@ -9,10 +9,11 @@ import Observation
 @Observable
 final class WorkListState {
     let kind: WorkList.Kind
-    var filter = WorkList.Filter()
+    /// The filters and the sort are kept for the next launch (#5451), and the list opens with them.
+    var filter = WorkList.Filter() { didSet { remember() } }
     /// The person's projects (#3283), as the model last said them, for the Project filter.
     var projects: [WorkList.Project] = []
-    var sort = WorkList.Sort.updated
+    var sort = WorkList.Sort.updated { didSet { remember() } }
     var lists: [(host: MachineRef, list: DaemonAPI.ForgeList)]?
     var lineage: [DaemonAPI.ReportNode] = []
     /// The boards the Board menu offers (#3282), read with the list.
@@ -46,7 +47,14 @@ final class WorkListState {
 
     init(kind: WorkList.Kind) {
         self.kind = kind
-        sort = kind.defaultSort
+        let kept = WorkRemembered.list(WorkRememberedStore.kept(kind), kind: kind)
+        filter = kept.filter
+        sort = kept.sort
+    }
+
+    /// Keeps what the list has now for the next launch; the defaults remove it.
+    private func remember() {
+        WorkRememberedStore.keep(WorkRemembered.words(filter, sort: sort, kind: kind), for: kind)
     }
 
     struct Ask: Equatable {
@@ -276,5 +284,16 @@ final class WorkLists {
         let state = WorkListState(kind: kind)
         byKind[kind] = state
         return state
+    }
+}
+
+/// Where the Work pages keep what they had when last left (#5451): this app's defaults.
+enum WorkRememberedStore {
+    static func kept(_ kind: WorkList.Kind) -> String? { WindowDefaults.store.string(forKey: WorkRemembered.key(kind)) }
+
+    static func keep(_ words: String, for kind: WorkList.Kind) {
+        let key = WorkRemembered.key(kind)
+        guard WindowDefaults.store.string(forKey: key) != words else { return }
+        if words.isEmpty { WindowDefaults.store.removeObject(forKey: key) } else { WindowDefaults.store.set(words, forKey: key) }
     }
 }
