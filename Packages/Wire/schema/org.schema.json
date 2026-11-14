@@ -1084,6 +1084,10 @@
         "owner": {
           "type": "string",
           "description": "The user who owns the machine (#994)."
+        },
+        "setup": {
+          "$ref": "machines.schema.json#/definitions/MachineSetup",
+          "description": "How its set-up stands, while it sets itself up and after (#5355). Absent for a machine that was not set up by the control plane."
         }
       },
       "required": [

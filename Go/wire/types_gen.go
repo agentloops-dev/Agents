@@ -3643,6 +3643,9 @@ type ControlMachine struct {
 
 	// The user who owns the machine (#994).
 	Owner *string `json:"owner,omitzero"`
+
+	// How its set-up stands, while it sets itself up and after (#5355). Absent for a machine that was not set up by the control plane.
+	Setup *MachineSetup `json:"setup,omitzero"`
 }
 
 // control/moved: where the control plane is now (T085).
@@ -8885,6 +8888,67 @@ type MachineSessionStart struct {
 
 	Start StartRequest `json:"start"`
 }
+
+// How a machine's set-up stands (#5355, epic #5353): the eight steps in order, and when it began and was ready. Steps 5 and 6 may run together.
+type MachineSetup struct {
+	Steps []MachineSetupStep `json:"steps"`
+
+	StartedAt Date `json:"startedAt"`
+
+	ReadyAt *Date `json:"readyAt,omitzero"`
+}
+
+// machine/setupStep: a step of the installer on the machine (agents-host install --join), as it starts, goes on and ends (#5355).
+type MachineSetupReport struct {
+	Step MachineSetupStepID `json:"step"`
+
+	State MachineSetupState `json:"state"`
+
+	Detail *string `json:"detail,omitzero"`
+
+	Error *string `json:"error,omitzero"`
+
+	FromPool *bool `json:"fromPool,omitzero"`
+}
+
+type MachineSetupState string
+
+const MachineSetupStateWaiting MachineSetupState = "waiting"
+const MachineSetupStateRunning MachineSetupState = "running"
+const MachineSetupStateNeedsYou MachineSetupState = "needs-you"
+const MachineSetupStateDone MachineSetupState = "done"
+const MachineSetupStateFailed MachineSetupState = "failed"
+
+// One step: detail is one line of what it is doing now or did; error is why it failed, in the words of the provider or the machine; fromPool says a warm pool did it before the machine was asked for; slower is true for a running step over 3 times its median (at least 2 minutes).
+type MachineSetupStep struct {
+	ID MachineSetupStepID `json:"id"`
+
+	State MachineSetupState `json:"state"`
+
+	StartedAt *Date `json:"startedAt,omitzero"`
+
+	EndedAt *Date `json:"endedAt,omitzero"`
+
+	Detail *string `json:"detail,omitzero"`
+
+	Error *string `json:"error,omitzero"`
+
+	FromPool *bool `json:"fromPool,omitzero"`
+
+	Slower *bool `json:"slower,omitzero"`
+}
+
+// The eight steps, in order: create machine, join machine, install Agents, compare digits, install runtimes, send projects, sign in to runtimes, smoke session.
+type MachineSetupStepID string
+
+const MachineSetupStepIDCreate MachineSetupStepID = "create"
+const MachineSetupStepIDJoin MachineSetupStepID = "join"
+const MachineSetupStepIDInstall MachineSetupStepID = "install"
+const MachineSetupStepIDCompare MachineSetupStepID = "compare"
+const MachineSetupStepIDRuntimes MachineSetupStepID = "runtimes"
+const MachineSetupStepIDProjects MachineSetupStepID = "projects"
+const MachineSetupStepIDSignIn MachineSetupStepID = "signIn"
+const MachineSetupStepIDSmoke MachineSetupStepID = "smoke"
 
 // machine/status on channel 0 (#691 US4): each agent working or waiting on a person, and the next scheduled workflow.
 type MachineStatus struct {

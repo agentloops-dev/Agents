@@ -3380,6 +3380,11 @@ export interface ControlMachine {
   missing?: string[];
   /** The user who owns the machine (#994). */
   owner?: string;
+  /**
+   * How its set-up stands, while it sets itself up and after (#5355). Absent for a machine that was
+   * not set up by the control plane.
+   */
+  setup?: MachineSetup;
 }
 
 /** control/moved: where the control plane is now (T085). */
@@ -8243,6 +8248,65 @@ export interface MachineSessionStart {
   host: string;
   start: StartRequest;
 }
+
+/**
+ * How a machine's set-up stands (#5355, epic #5353): the eight steps in order, and when it began
+ * and was ready. Steps 5 and 6 may run together.
+ */
+export interface MachineSetup {
+  steps: MachineSetupStep[];
+  startedAt: WireDate;
+  readyAt?: WireDate;
+}
+
+/**
+ * machine/setupStep: a step of the installer on the machine (agents-host install --join), as it
+ * starts, goes on and ends (#5355).
+ */
+export interface MachineSetupReport {
+  step: MachineSetupStepID;
+  state: MachineSetupState;
+  detail?: string;
+  error?: string;
+  fromPool?: boolean;
+}
+
+export type MachineSetupState =
+  | "waiting"
+  | "running"
+  | "needs-you"
+  | "done"
+  | "failed";
+
+/**
+ * One step: detail is one line of what it is doing now or did; error is why it failed, in the words
+ * of the provider or the machine; fromPool says a warm pool did it before the machine was asked
+ * for; slower is true for a running step over 3 times its median (at least 2 minutes).
+ */
+export interface MachineSetupStep {
+  id: MachineSetupStepID;
+  state: MachineSetupState;
+  startedAt?: WireDate;
+  endedAt?: WireDate;
+  detail?: string;
+  error?: string;
+  fromPool?: boolean;
+  slower?: boolean;
+}
+
+/**
+ * The eight steps, in order: create machine, join machine, install Agents, compare digits, install
+ * runtimes, send projects, sign in to runtimes, smoke session.
+ */
+export type MachineSetupStepID =
+  | "create"
+  | "join"
+  | "install"
+  | "compare"
+  | "runtimes"
+  | "projects"
+  | "signIn"
+  | "smoke";
 
 /**
  * machine/status on channel 0 (#691 US4): each agent working or waiting on a person, and the next
@@ -16866,7 +16930,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   ControlEndpoint: { required: ["url"], optional: ["pin"] },
   ControlHello: { required: ["v", "name", "control", "nonce", "copy"], optional: ["previous"] },
   ControlInstallProgress: { required: ["name", "step"], optional: [] },
-  ControlMachine: { required: ["id", "name", "platform", "version", "state", "reach"], optional: ["machineID", "signInFrom", "gitFrom", "gitAsks", "tunnel", "workspace", "implementation", "capabilities", "missing", "owner"] },
+  ControlMachine: { required: ["id", "name", "platform", "version", "state", "reach"], optional: ["machineID", "signInFrom", "gitFrom", "gitAsks", "tunnel", "workspace", "implementation", "capabilities", "missing", "owner", "setup"] },
   ControlMoved: { required: ["url", "controlKey", "name"], optional: ["pin"] },
   ControlNewKey: { required: ["key", "proof"], optional: [] },
   ControlNotice: { required: ["kind", "words"], optional: ["user", "group"] },
@@ -17253,6 +17317,9 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   MachineSecretOpsCall: { required: ["ops"], optional: ["held"] },
   MachineSessionCall: { required: ["host", "call"], optional: [] },
   MachineSessionStart: { required: ["host", "start"], optional: [] },
+  MachineSetup: { required: ["steps", "startedAt"], optional: ["readyAt"] },
+  MachineSetupReport: { required: ["step", "state"], optional: ["detail", "error", "fromPool"] },
+  MachineSetupStep: { required: ["id", "state"], optional: ["startedAt", "endedAt", "detail", "error", "fromPool", "slower"] },
   MachineStatus: { required: ["idle", "running"], optional: ["schedule"] },
   MachineStop: { required: ["host"], optional: ["confirmRunning"] },
   MachineSummaryFacts: { required: ["machine", "machineName"], optional: ["facts", "unreached"] },
