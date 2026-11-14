@@ -163,6 +163,8 @@ type Service struct {
 	multiplierBook
 	// Each machine's hints and the newest operation on each secret (#4158): memory only.
 	secretInfoBook
+	// Each machine's capacity and each person's last start, for Auto (#5374): memory only.
+	autoBook
 	origin  string
 	copyID  string
 	records *records.Records

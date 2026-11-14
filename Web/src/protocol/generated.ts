@@ -1033,6 +1033,66 @@ export type AutoField =
   | "sandbox";
 
 /**
+ * Why no machine fits: none has the project, none has the runtime installed and signed in, or every
+ * machine with the project is offline.
+ */
+export type AutoMachineNone =
+  | "noFolder"
+  | "noRuntime"
+  | "offline";
+
+/**
+ * The answer of sessions/previewStart (#5374): the pick, or why none fits. The control plane makes
+ * the reason line; a client draws what it is given. The pick at start may differ if the state
+ * moved.
+ */
+export interface AutoMachinePick {
+  /** The machine chosen; absent when none fits. */
+  machine?: MachineRef;
+  machineName?: string;
+  /** The tier the pick came from. */
+  tier?: CapacityLevel;
+  reason?: AutoMachineReason;
+  /** Its 5-minute load per core, when known. */
+  loadPerCore?: number;
+  /**
+   * The commit the session's fresh worktree starts from. Set by the host at start; absent in a
+   * preview.
+   */
+  commit?: string;
+  /**
+   * The one-line reason, "Auto chose Mac mini: you last started here.", or the none-fits sentence.
+   */
+  text?: string;
+  /** Set when no machine fits. */
+  none?: AutoMachineNone;
+  /** With none offline: the names of the offline machines that have the project. */
+  offline?: string[];
+  /**
+   * True when the project has one machine only: no Auto row and no line, the machine is just shown.
+   */
+  single?: boolean;
+}
+
+/**
+ * Why Auto chose: the person last started this project there, or it was the least loaded by
+ * 5-minute load per core.
+ */
+export type AutoMachineReason =
+  | "lastUsed"
+  | "leastLoaded";
+
+/**
+ * sessions/previewStart and a start with machine auto (#5374, specs/5373-auto-machine): which
+ * machine Auto would pick for a project and a runtime.
+ */
+export interface AutoMachineRequest {
+  /** The project id. */
+  project: string;
+  runtimeID: string;
+}
+
+/**
  * One cell of Settings ▸ Agent Runtimes ▸ Auto ▸ Mappings (#2658): what a level is on one runtime.
  * native is absent when the runtime cannot honour the level.
  */
@@ -2109,6 +2169,15 @@ export type CapacityLevel =
   | "ok"
   | "near"
   | "full";
+
+/**
+ * machine/capacity (#5374): a host tells the control plane its capacity level and 5-minute load per
+ * core, on connect and when either moves enough to matter.
+ */
+export interface CapacityReport {
+  level: CapacityLevel;
+  loadPerCore5?: number;
+}
 
 /**
  * capacity/state and capacity/changed (#4748): the machine's level, pushed when it moves, so a
@@ -3380,6 +3449,19 @@ export interface ControlMachine {
   missing?: string[];
   /** The user who owns the machine (#994). */
   owner?: string;
+  /**
+   * The machine's capacity level as it last pushed it (#4578, #5374). Absent from a host older than
+   * #4578 or before its first look: it counts as ok, last among the ok ones. It can be stale by the
+   * host's look interval (15 s) and the push; capacityAt says when it was heard.
+   */
+  capacity?: CapacityLevel;
+  /** Its 5-minute load per core when it last pushed (#5374). */
+  loadPerCore5?: number;
+  /**
+   * When the control plane last heard its capacity. A figure older than 2 minutes is never trusted
+   * by Auto (specs/5373-auto-machine).
+   */
+  capacityAt?: WireDate;
   /**
    * How its set-up stands, while it sets itself up and after (#5355). Absent for a machine that was
    * not set up by the control plane.
@@ -16925,6 +17007,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   AuditSinksState: { required: ["sinks"], optional: [] },
   AuthStatus: { required: ["kind", "label"], optional: [] },
   AuthenticateRequest: { required: ["runtimeID", "methodID"], optional: ["accountID"] },
+  AutoMachinePick: { required: [], optional: ["machine", "machineName", "tier", "reason", "loadPerCore", "commit", "text", "none", "offline", "single"] },
+  AutoMachineRequest: { required: ["project", "runtimeID"], optional: [] },
   AutoMapping: { required: ["runtimeID", "field", "level", "words", "mark"], optional: ["native", "note"] },
   AutoMappings: { required: ["cells", "choices"], optional: [] },
   AutoNativeChoice: { required: ["runtimeID", "field", "native", "words"], optional: [] },
@@ -17005,6 +17089,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   BusSubscription: { required: ["id"], optional: ["provider", "type", "topics", "subject"] },
   CancelWaitRequest: { required: ["agentID"], optional: [] },
   CapReached: { required: ["user", "name", "spentUSD", "capUSD", "until"], optional: ["group"] },
+  CapacityReport: { required: ["level"], optional: ["loadPerCore5"] },
   CapacityState: { required: ["level"], optional: ["words"] },
   CatalogApproval: { required: ["kind", "name", "by", "at"], optional: ["source", "group", "groupName", "user", "userName"] },
   CatalogApprovalList: { required: ["approvals"], optional: [] },
@@ -17095,7 +17180,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   ControlEndpoint: { required: ["url"], optional: ["pin"] },
   ControlHello: { required: ["v", "name", "control", "nonce", "copy"], optional: ["previous"] },
   ControlInstallProgress: { required: ["name", "step"], optional: [] },
-  ControlMachine: { required: ["id", "name", "platform", "version", "state", "reach"], optional: ["machineID", "signInFrom", "gitFrom", "gitAsks", "tunnel", "workspace", "implementation", "capabilities", "missing", "owner", "setup"] },
+  ControlMachine: { required: ["id", "name", "platform", "version", "state", "reach"], optional: ["machineID", "signInFrom", "gitFrom", "gitAsks", "tunnel", "workspace", "implementation", "capabilities", "missing", "owner", "capacity", "loadPerCore5", "capacityAt", "setup"] },
   ControlMoved: { required: ["url", "controlKey", "name"], optional: ["pin"] },
   ControlNewKey: { required: ["key", "proof"], optional: [] },
   ControlNotice: { required: ["kind", "words"], optional: ["user", "group"] },

@@ -1085,6 +1085,18 @@
           "type": "string",
           "description": "The user who owns the machine (#994)."
         },
+        "capacity": {
+          "$ref": "machines.schema.json#/definitions/CapacityLevel",
+          "description": "The machine's capacity level as it last pushed it (#4578, #5374). Absent from a host older than #4578 or before its first look: it counts as ok, last among the ok ones. It can be stale by the host's look interval (15 s) and the push; capacityAt says when it was heard."
+        },
+        "loadPerCore5": {
+          "type": "number",
+          "description": "Its 5-minute load per core when it last pushed (#5374)."
+        },
+        "capacityAt": {
+          "$ref": "core.schema.json#/definitions/WireDate",
+          "description": "When the control plane last heard its capacity. A figure older than 2 minutes is never trusted by Auto (specs/5373-auto-machine)."
+        },
         "setup": {
           "$ref": "machines.schema.json#/definitions/MachineSetup",
           "description": "How its set-up stands, while it sets itself up and after (#5355). Absent for a machine that was not set up by the control plane."
