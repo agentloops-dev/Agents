@@ -48,7 +48,8 @@ $S/rpc.py $ROOT start claude $ROOT/work "Write hello.txt with one line in it." 1
 # 4. look at it, if the change is visual
 $S/walk.py $ROOT shot /tmp/run-mychange-1.png    # then Read the png; works on a locked screen
 
-# 5. always, at the end: see "When you are done" below
+# 5. always, before you commit, push or end the turn, also when the walk failed:
+#    every step of "When you are done" below (fixtures, browser, stop.sh, check, build/)
 $S/stop.sh $ROOT                                  # must print clean
 ```
 
@@ -407,7 +408,7 @@ AGENTS_TEST_GITHUB_URL=http://127.0.0.1:<port>`. With that set, `connections/sig
 checks a GitHub token at the fixture's `/api/user`, never at api.github.com, and each fixture
 takes any token as `sam`'s: connect it with a token, with no Keychain item by hand. Give the
 folder the fixture's origin (most of them `https://github.com/example/shop`). Stop the fixture
-when you are done, as `stop.sh` does not know it.
+when you are done, as `stop.sh` does not know it ("When you are done", step 1).
 
 ```sh
 python3 -I Web/test/walk/forge3268-github.py 8931 & FIXTURE=$!
@@ -580,34 +581,41 @@ clip (above). A walk plays nothing out loud, so the sound comes from voice mode'
 
 ## When you are done
 
-Before you commit, hand back or end your turn, close everything you started and delete
+Before you commit, push, hand back or end your turn, close everything you started and delete
 the scratch app and its files. Do this also when the walk failed, and as soon as you have
 finished with the app: not when the lane ends. A scratch app left running is a bug in the
 lane: a headless Chrome from one web walk ran for 20 hours after its PR merged (#1624). A
 scratch app left on disk is one too: 264 `/tmp/run-*` items and four worktrees' builds of
 0.7–7 GB each were found waiting on CI and review (#2400).
 
-1. For every page you opened with the `browser_*` tools: `browser_close`. For every headless
+1. For every fixture or helper process you started yourself (a fixture GitHub from
+   `Web/test/walk/*-github.py`, a `python3 -m http.server`, any other process you put in the
+   background with `&`): `kill` it by the pid you kept (`kill $FIXTURE`). `stop.sh` does not
+   know these. The fake Azure DevOps, Bitbucket and Forgejo that `launch.sh` started are
+   not in this step: `stop.sh` stops them.
+2. For every page you opened with the `browser_*` tools: `browser_close`. For every headless
    Chrome from `Web/test/walk/cdp.mjs`: `await chrome.close()`. Its
-   profile, `/tmp/run-<slug>-chrome*`, goes in step 3.
-2. If you started the walk simulator: `$S/remote.sh down`. It uninstalls the Remote too.
-3. For every root you launched: `$S/stop.sh $ROOT`. It must print `clean`. It removes the
+   profile, `/tmp/run-<slug>-chrome*`, goes in step 4.
+3. If you started the walk simulator: `$S/remote.sh down`. It uninstalls the Remote too.
+4. For every root you launched: `$S/stop.sh $ROOT`. It must print `clean`. It removes the
    root and its side files (`/tmp/run-<slug>-*`, `/tmp/run-<slug>.*`: the build log, the
    shots, the Chrome profiles). A root you kept with `--keep`: run `$S/stop.sh $ROOT` again
    the moment you have read it.
-4. Check that nothing is left, running or on disk. Both must print nothing:
+5. Check that nothing is left, running or on disk. Each must print nothing. In the second
+   line, put the script and port of every fixture from step 1 (here `forge3268-github.py 8931`):
 
    ```sh
    pgrep -fl -- "--walk run-<slug>|/tmp/run-<slug>"
+   pgrep -fl -- "Web/test/walk/.*-github\.py 8931"
    ls -d /tmp/run-<slug>* 2>/dev/null
    ```
 
-5. After the last walk or screenshot you need, unless you will launch again in this turn,
-   delete the worktree's own build output: the scratch `Agent Loops.app` in
-   `build/DD`, about 2 GB a worktree, and 17 lanes' of it filled the disk (#2346). Do not
-   wait for the lane to end: a rebuild from the shared cache is fast (#234), and a lane
-   that must walk again after review rebuilds. Never in the main checkout, whose
-   `build/DD` the live app may run from. The shared cache in
+6. When you have taken the last walk or screenshot for this change, delete the worktree's
+   own build output: the scratch `Agent Loops.app` in `build/DD`, about 2 GB a worktree;
+   17 lanes' of it filled the disk (#2346). Do this before you commit, not when the lane
+   ends or after review. A lane that must walk again later (after review or a fix)
+   rebuilds from the shared cache, which is fast (#234). Never delete it in the main
+   checkout, because the live app can run from its `build/DD`. The shared cache in
    `~/Library/Caches/Agents-build/` stays.
 
    ```sh
