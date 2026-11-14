@@ -773,6 +773,8 @@ var HostNotifications = set([]string{
 
 // ControlCapabilities is the capability of each method and notification in control.openrpc.json.
 var ControlCapabilities = pairs([][2]string{
+	{"approvals/list", "approvals/1"},
+	{"approvals/put", "approvals/1"},
 	{"attention/need", "attention/2"},
 	{"attention/turn", "liveactivity/1"},
 	{"audit/export", "events.audit/1"},

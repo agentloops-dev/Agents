@@ -714,6 +714,8 @@ export const HostCapabilities: Readonly<Record<string, Capability>> = {
 
 /** The capability of each method and notification in control.openrpc.json. */
 export const ControlCapabilities: Readonly<Record<string, Capability>> = {
+  "approvals/list": "approvals/1",
+  "approvals/put": "approvals/1",
   "attention/need": "attention/2",
   "attention/turn": "liveactivity/1",
   "audit/export": "events.audit/1",

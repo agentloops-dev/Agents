@@ -29,6 +29,48 @@
   ],
   "methods": [
     {
+      "name": "approvals/list",
+      "x-capability": "approvals/1",
+      "description": "A machine, on its channel 0 (#5462): the approvals of the caller's person, each signed by the machine that made it. The machine takes one only for a file with the same digest, and only when its pinned machine lock names the signer.",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/core.schema.json#/definitions/Empty"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/workflows.schema.json#/definitions/PersonApprovals"
+        }
+      }
+    },
+    {
+      "name": "approvals/put",
+      "x-capability": "approvals/1",
+      "description": "A machine, on its channel 0 (#5462): approvals it signed. The control plane keeps the first of each kind and digest, up to 2000 for a person; it signs nothing.",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/workflows.schema.json#/definitions/PersonApprovalsPut"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/workflows.schema.json#/definitions/PersonApprovals"
+        }
+      }
+    },
+    {
       "name": "attention/need",
       "x-capability": "attention/2",
       "description": "A host, on its channel 0 (R6).",

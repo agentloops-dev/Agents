@@ -5088,6 +5088,11 @@ export interface FolderMCPServer {
   entryDigest: string;
   signIn?: MCPSignInState;
   views?: string;
+  /**
+   * Where this machine's approval came from when it is another machine's of the same person
+   * (#5462).
+   */
+  approvedFrom?: string;
 }
 
 export interface FolderPins {
@@ -9946,6 +9951,43 @@ export interface PermissionRequest {
   options: PermissionOption[];
   askedAt: WireDate;
   subagent?: string;
+}
+
+/**
+ * A person's approval of one file's content (#5462, epic #5281), signed by the machine that
+ * approved it. kind is "workflow" (a workflow file with the skills it names) or "connector" (one
+ * entry of .agents/mcp.json); digest is the hash the approving machine saw, so a changed file has
+ * another digest and is not covered. sig is ECDSA P-256 (r then s) with SHA-256 over
+ * "agents-approval/1\n", the person, kind, digest, host and at, each ended by a newline but the
+ * last (at in decimal). A machine takes one only when the machine lock it pinned names key as one
+ * of the person's machines. The control plane keeps and sends them, and signs nothing.
+ */
+export interface PersonApproval {
+  kind: "workflow" | "connector";
+  digest: string;
+  /** What the file is called, to say where an approval came from. */
+  name?: string;
+  /** The approving machine's id. */
+  host: string;
+  /** The approving machine's name when it approved. */
+  hostName?: string;
+  /** Seconds since 1970. */
+  at: number;
+  key: Base64;
+  sig: Base64;
+}
+
+/** approvals/list (#5462): every approval kept for the caller's person, at most 2000. */
+export interface PersonApprovals {
+  approvals: PersonApproval[];
+}
+
+/**
+ * approvals/put (#5462): approvals a machine signed, at most 50 at a time. The control plane keeps
+ * the first of each kind and digest.
+ */
+export interface PersonApprovalsPut {
+  approvals: PersonApproval[];
 }
 
 export interface PersonClient {
@@ -15815,6 +15857,11 @@ export interface WorkflowSummary {
   offReason?: WorkflowOffReason;
   standingAgentID?: UUID;
   mcpTriggers?: MCPTriggerStatus[];
+  /**
+   * Where this machine's approval came from when it is another machine's of the same person
+   * (#5462), such as "Approved by you on Studio, 2026-11-14".
+   */
+  approvedFrom?: string;
 }
 
 export type WorkflowTrigger = WorkflowTriggerStored;
@@ -17315,7 +17362,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   Folder: { required: ["folder", "addedAt"], optional: ["archivedAt", "helperLimits", "diskSpace", "pinned", "prCostComment", "workingHours"] },
   FolderDetection: { required: ["enabled", "paths"], optional: [] },
   FolderHunk: { required: ["oldStart", "newStart", "noNewlineAtEnd", "lines"], optional: [] },
-  FolderMCPServer: { required: ["name", "summary", "approval", "missingSecrets", "secretNames", "entryDigest"], optional: ["managed", "signIn", "views"] },
+  FolderMCPServer: { required: ["name", "summary", "approval", "missingSecrets", "secretNames", "entryDigest"], optional: ["managed", "signIn", "views", "approvedFrom"] },
   FolderPins: { required: ["folder", "pins"], optional: ["sessions", "workflows", "views", "reviews", "suggestions"] },
   FolderPlugin: { required: ["folder", "name", "carries", "folderPath"], optional: ["awaitingApproval"] },
   FolderRemovedNotification: { required: ["folder"], optional: [] },
@@ -17680,6 +17727,9 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   PermissionNotification: { required: ["agentID", "requestID"], optional: ["request"] },
   PermissionOption: { required: ["optionID", "name", "kind"], optional: [] },
   PermissionRequest: { required: ["id", "agentID", "toolCall", "options", "askedAt"], optional: ["subagent"] },
+  PersonApproval: { required: ["kind", "digest", "host", "at", "key", "sig"], optional: ["name", "hostName"] },
+  PersonApprovals: { required: ["approvals"], optional: [] },
+  PersonApprovalsPut: { required: ["approvals"], optional: [] },
   PersonClient: { required: ["id", "name", "kind"], optional: [] },
   PersonEndRequest: { required: ["name"], optional: ["agentID"] },
   PersonInvite: { required: ["name", "role"], optional: [] },
@@ -18186,7 +18236,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   WorkflowSchedule: { required: ["minutes", "hours", "startMinute", "endMinute", "days"], optional: [] },
   WorkflowSettings: { required: ["options", "labels"], optional: ["permissionMode", "runtimeID", "model", "effort", "permissionRequests", "sandbox"] },
   WorkflowSettingsRequest: { required: ["folder", "workflowID", "settings"], optional: ["cooldown", "hours", "labels", "whenDone", "continueWhenBack", "runsOn"] },
-  WorkflowSummary: { required: ["workflow", "isArchived", "isEnabled", "nextFireAtByTrigger", "isRunning", "holdsAFire", "queued"], optional: ["scope", "content", "overLimit", "totalLimit", "nextFireAt", "lastOutcome", "causingEvent", "causingEventName", "hearsFor", "readyMadeUpdatedAt", "newerReadyMade", "awaitingApproval", "deniedHere", "lastFiredAt", "lastFiredBy", "cooldownEndsAt", "hoursOpenAt", "offReason", "standingAgentID", "mcpTriggers"] },
+  WorkflowSummary: { required: ["workflow", "isArchived", "isEnabled", "nextFireAtByTrigger", "isRunning", "holdsAFire", "queued"], optional: ["scope", "content", "overLimit", "totalLimit", "nextFireAt", "lastOutcome", "causingEvent", "causingEventName", "hearsFor", "readyMadeUpdatedAt", "newerReadyMade", "awaitingApproval", "deniedHere", "lastFiredAt", "lastFiredBy", "cooldownEndsAt", "hoursOpenAt", "offReason", "standingAgentID", "mcpTriggers", "approvedFrom"] },
   WorkflowWriteRequest: { required: ["workflowID", "content"], optional: [] },
   WorkflowsListRequest: { required: [], optional: ["folder", "scope"] },
   WorktreeRemovalRequest: { required: ["root", "confirmed", "folder"], optional: [] },

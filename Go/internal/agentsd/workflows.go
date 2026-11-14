@@ -50,6 +50,10 @@ type workflowState struct {
 	ApprovedCopy     *string               `json:"approvedCopy,omitempty"`
 	ApprovedSkills   map[string]string     `json:"approvedSkills,omitempty"`
 	DeniedDigest     *string               `json:"deniedDigest,omitempty"`
+	// ApprovedFrom says whose approval this machine took for the file it has approved, "Approved
+	// by you on Studio, 2026-11-14" (#5462): the person's approval of the same content, made
+	// on another of their machines. A person's own Approve here clears it.
+	ApprovedFrom *string `json:"approvedFrom,omitempty"`
 	// HeardDigest is the file a person approved to be heard here for a bot (#2027). It is
 	// apart from ApprovedDigest, which every file gets at the first start: hearing a bot's
 	// workflow with this machine's servers waits for the person, always.
@@ -243,6 +247,7 @@ func (d *Daemon) keepCopyLocked(st *workflowState, f *workflowFile) {
 	}
 	digest := f.digest
 	st.ApprovedDigest = &digest
+	st.ApprovedFrom = nil
 }
 
 // dropUnnamedCopiesLocked deletes each copy in workflow-copies that no workflow's record
@@ -352,6 +357,7 @@ func (d *Daemon) scanLocked() {
 		}
 		d.saveRecordsLocked(false)
 	}
+	d.adoptSharedWorkflowsLocked(files)
 	if home != "" && !d.workflowRecsBad && (r.UserApprovalsBegan == nil || d.approveReadyMadeLocked(home, files[home])) {
 		if r.UserApprovalsBegan == nil {
 			t := now()
@@ -574,6 +580,10 @@ func (d *Daemon) summaryLocked(folder, id string, over map[string]wire.WorkflowL
 		s.TotalLimit = &t
 	}
 	s.AwaitingApproval, s.DeniedHere = d.approvalOf(folder, id, f)
+	if st := d.stateLocked(approvalFolderOf(folder, f), id, false); st != nil && s.AwaitingApproval == nil && st.ApprovedFrom != nil &&
+		st.ApprovedDigest != nil && *st.ApprovedDigest == f.digest {
+		s.ApprovedFrom = st.ApprovedFrom
+	}
 	s.IsRunning = d.runningLocked(folder, id)
 	if bot := d.hearsFor(f.wf); bot != "" {
 		s.HearsFor = &bot
@@ -1195,7 +1205,15 @@ func (d *Daemon) approveWorkflow(r wire.WorkflowApproveRequest, approve bool) (w
 		}
 	}
 	d.saveRecordsLocked(true)
+	name := f.wf.Name
+	if name == "" {
+		name = r.WorkflowID
+	}
+	heard := d.hearsFor(f.wf) != ""
 	d.workflowMu.Unlock()
+	if approve && !heard {
+		d.sharePersonApproval(approvalKindWorkflow, r.Digest, name)
+	}
 	d.tellEveryWorkflow()
 	return d.oneWorkflow(folder, r.WorkflowID)
 }

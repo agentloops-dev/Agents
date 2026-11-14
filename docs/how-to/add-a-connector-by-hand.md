@@ -50,6 +50,12 @@ the sheet shows the tools it listed.
 Agents you start after that have the connector. A folder's entry is approved as it goes in,
 as a registry one is.
 
+Your approval goes with you (#5462): an entry in a folder's `.agents/mcp.json` that you approved
+on another of your machines, with the same content, is approved on a new machine of yours too,
+and the row says **Approved by you on Studio, 2026-11-14**. An entry that is new, or changed
+since you approved it, waits for your OK on every machine. See
+[Approve, Deny and Archive](../reference/workflows.md#an-approval-goes-with-you-not-with-one-machine-5462).
+
 ## Take it out
 
 The row shows **added by hand**, and has **Remove…**, as a registry connector's does: see

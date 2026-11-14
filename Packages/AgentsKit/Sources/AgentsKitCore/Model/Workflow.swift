@@ -289,6 +289,9 @@ public struct WorkflowSummary: Codable, Hashable, Sendable, Identifiable {
     /// its place on the list. The digest is what Approve sends to take it back. Other
     /// hosts, and the file, know nothing of it.
     public var deniedHere: WorkflowApproval?
+    /// Where this machine's approval came from, when it is the person's own on another of
+    /// their machines (#5462), such as "Approved by you on Studio, 2026-11-14".
+    public var approvedFrom: String?
     /// When it last started an agent, and what set that run off (#98). Apart from
     /// `lastOutcome`, which a refusal overwrites: a workflow turned off for a week has
     /// a week of refusals on top of the last time it actually ran.
@@ -343,7 +346,8 @@ public struct WorkflowSummary: Codable, Hashable, Sendable, Identifiable {
                 nextFireAtByTrigger: [Date?] = [],
                 cooldownEndsAt: Date? = nil, holdsAFire: Bool = false, queued: Int = 0,
                 offReason: WorkflowOffReason? = nil, standingAgentID: UUID? = nil,
-                mcpTriggers: [MCPTriggerStatus]? = nil, hearsFor: String? = nil, hoursOpenAt: Date? = nil) {
+                mcpTriggers: [MCPTriggerStatus]? = nil, hearsFor: String? = nil, hoursOpenAt: Date? = nil, approvedFrom: String? = nil) {
+        self.approvedFrom = approvedFrom
         self.hoursOpenAt = hoursOpenAt
         self.mcpTriggers = mcpTriggers
         self.hearsFor = hearsFor

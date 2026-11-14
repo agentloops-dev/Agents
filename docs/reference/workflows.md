@@ -453,6 +453,31 @@ page:
 | **Deny on This Host** | Don't run here | This Mac or server, beside the approval. Not in the workflow's file |
 | **Archive** | Don't run anywhere | The workflow's file, as `archived: true` |
 
+### An approval goes with you, not with one machine (#5462)
+
+Approve is of the file's content, not of one machine. When you approve a workflow (with the
+skills it names) on one of your machines, that machine signs a record of its content hash
+with its key on your machine lock and sends it to the control plane, which keeps it and
+signs nothing. Another machine of yours that has the same file takes the approval, once the
+lock it pinned says that one of your machines signed it, and runs the workflow with no new
+prompt. Its page then says where the approval came from, for example **Approved by you on
+Studio, 2026-11-14**.
+
+- **A new or changed file still waits.** A file nobody approved, or one that changed since
+  you approved it, has a hash no approval covers, so a push to the repo cannot change what
+  runs without your OK, on any machine. A new machine never approves what the repo holds
+  by itself.
+- **Deny on This Host stays on that machine.** It means "not here": a file denied here is
+  not approved by your approval elsewhere. Denying does not take back an approval you made
+  on another machine; archive the file, or change it, to stop it everywhere.
+- **No control plane, no shared approval.** A machine with no control plane or no machine
+  lock asks, as before.
+- **A bot's machines** (`runs-on:` a bot's name) do not take your approvals. A workflow heard
+  here for a bot waits for you on that machine, as above (#2027).
+- **Connectors work the same way:** an entry of `.agents/mcp.json` that you approved on
+  another of your machines, with the same content, is approved here. See
+  [Add a connector by hand](../how-to/add-a-connector-by-hand.md).
+
 Deny is of the file as you saw it, the same way Approve is: a later change to the file
 waits for your OK again. Other Macs and servers are untouched: they still see it waiting,
 and any of them can approve it and run it. Nothing is written into the folder, so there

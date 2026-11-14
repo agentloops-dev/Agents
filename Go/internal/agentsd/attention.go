@@ -101,6 +101,9 @@ type attentionState struct {
 	tellControl atomic.Pointer[func(method string, params any)]
 	// askControl asks the control plane on channel 0 and waits (workspacetools.go).
 	askControl atomic.Pointer[askControl]
+	// personApprovals are the person's approvals taken from the control plane (#5462).
+	personApprovals   personApprovals
+	personApprovalsOn sync.Once
 	// controlCapabilities is what the control plane said it can do (#4100), the uplink's
 	// ControlCapabilities; nil off a control plane.
 	controlCapabilities atomic.Pointer[func() []string]

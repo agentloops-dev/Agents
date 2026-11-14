@@ -5548,6 +5548,9 @@ type FolderMCPServer struct {
 	SignIn *MCPSignInState `json:"signIn,omitzero"`
 
 	Views *string `json:"views,omitzero"`
+
+	// Where this machine's approval came from when it is another machine's of the same person (#5462).
+	ApprovedFrom *string `json:"approvedFrom,omitzero"`
 }
 
 type FolderPins struct {
@@ -10612,6 +10615,39 @@ type PermissionRequest struct {
 	AskedAt Date `json:"askedAt"`
 
 	Subagent *string `json:"subagent,omitzero"`
+}
+
+// A person's approval of one file's content (#5462, epic #5281), signed by the machine that approved it. kind is "workflow" (a workflow file with the skills it names) or "connector" (one entry of .agents/mcp.json); digest is the hash the approving machine saw, so a changed file has another digest and is not covered. sig is ECDSA P-256 (r then s) with SHA-256 over "agents-approval/1\n", the person, kind, digest, host and at, each ended by a newline but the last (at in decimal). A machine takes one only when the machine lock it pinned names key as one of the person's machines. The control plane keeps and sends them, and signs nothing.
+type PersonApproval struct {
+	Kind string `json:"kind"`
+
+	Digest string `json:"digest"`
+
+	// What the file is called, to say where an approval came from.
+	Name *string `json:"name,omitzero"`
+
+	// The approving machine's id.
+	Host string `json:"host"`
+
+	// The approving machine's name when it approved.
+	HostName *string `json:"hostName,omitzero"`
+
+	// Seconds since 1970.
+	At int64 `json:"at"`
+
+	Key Data `json:"key"`
+
+	Sig Data `json:"sig"`
+}
+
+// approvals/list (#5462): every approval kept for the caller's person, at most 2000.
+type PersonApprovals struct {
+	Approvals []PersonApproval `json:"approvals"`
+}
+
+// approvals/put (#5462): approvals a machine signed, at most 50 at a time. The control plane keeps the first of each kind and digest.
+type PersonApprovalsPut struct {
+	Approvals []PersonApproval `json:"approvals"`
 }
 
 type PersonClient struct {
@@ -17156,6 +17192,9 @@ type WorkflowSummary struct {
 	StandingAgentID *UUID `json:"standingAgentID,omitzero"`
 
 	McpTriggers []MCPTriggerStatus `json:"mcpTriggers,omitzero"`
+
+	// Where this machine's approval came from when it is another machine's of the same person (#5462), such as "Approved by you on Studio, 2026-11-14".
+	ApprovedFrom *string `json:"approvedFrom,omitzero"`
 }
 
 // UnmarshalJSON reads a field that is missing as its default.
