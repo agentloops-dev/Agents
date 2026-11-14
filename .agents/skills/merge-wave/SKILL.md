@@ -134,7 +134,7 @@ Alex asks for that by name.
 Then `$W clean $WAVE` removes the wave's own worktree and its `lead/wave-*` branch,
 and with it the wave's `build/DD` and `.build`. That is the only worktree the wave
 removes. A lane whose branch the wave landed deletes its own `build/` and `.build`
-(run-app's "When you are done", step 5; #2346): the wave never touches a lane worktree.
+(run-app's "When you are done", step 6; #2346): the wave never touches a lane worktree.
 
 ## Standing rules
 
