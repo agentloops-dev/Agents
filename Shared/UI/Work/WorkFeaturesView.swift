@@ -34,8 +34,11 @@ final class WorkFeaturesState {
     /// The open pull requests of every machine, by the label a lane gives each (*P#45*).
     var pulls: [String: DaemonAPI.ForgeItem] = [:]
     var asked = 0
-    /// The board the epics are narrowed to (#3282), by its url; "" for every board.
-    var board = ""
+    /// The board the epics are narrowed to (#3282), by its url; "" for every board. Kept for the
+    /// next launch (#5451).
+    var board = WorkRemembered.value("board", in: WorkRememberedStore.kept(.feature)) {
+        didSet { WorkRememberedStore.keep(WorkRemembered.features(board: board), for: .feature) }
+    }
     /// The boards the Board menu offers, read with the features.
     var boards: [DaemonAPI.ProjectBoard] = []
     private var read: Ask?

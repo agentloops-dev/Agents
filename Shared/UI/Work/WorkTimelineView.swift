@@ -10,11 +10,12 @@ import SwiftUI
 @MainActor
 @Observable
 final class WorkTimelineState {
-    var range: WorkTimeline.Range = .twoDays
+    /// The range, the project and the board are kept for the next launch (#5451).
+    var range: WorkTimeline.Range = .twoDays { didSet { remember() } }
     /// The project, by id; "" until one is picked, then the first one.
-    var project = ""
+    var project = "" { didSet { remember() } }
     /// The board the epics are narrowed to (#3282), by its url; "" for every board.
-    var board = ""
+    var board = "" { didSet { remember() } }
     var boards: [DaemonAPI.ProjectBoard] = []
     /// Where the window is: Now, until the plot is scrolled past an edge.
     var anchor = Date.now
@@ -45,6 +46,17 @@ final class WorkTimelineState {
     }
 
     var ask: Ask { Ask(asked: asked, project: project, board: board, range: range, anchor: anchor) }
+
+    init() {
+        let kept = WorkRemembered.timeline(WorkRememberedStore.kept(.timeline))
+        range = kept.range
+        project = kept.project
+        board = kept.board
+    }
+
+    private func remember() {
+        WorkRememberedStore.keep(WorkRemembered.timeline(range: range, project: project, board: board), for: .timeline)
+    }
 
     /// The plot on screen came from this device's copy (#4930), until the machines answer.
     var fromDevice = false
