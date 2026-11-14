@@ -75,6 +75,11 @@ For each ready child that is open and not taken, in the AGENTS.md order (`priori
 then UI changes, bugs before features, then the rest):
 
 1. Assign it: `gh issue edit <child> --add-assignee alexec`.
+   Before you start a lane on a child whose work is on a branch or an open PR, run
+   `scripts/conflict-risk.sh <branch> --depends <blocker PRs>` (#5473). On `wait for #N`,
+   hold the lane until #N lands (wait on its `pr.closed`); on `stack on #N`, tell the lane
+   to base on #N's branch (#1777). A child with no branch yet has nothing to run: the lane
+   runs it itself. It is advice, never a gate.
 2. Start its lane with `start_session`, with the prompt and labels from
    `.agents/personas/software-engineer.md`. The first line of the prompt is
    `#<child>: <title>`, then a blank line and the persona's instructions; put nothing

@@ -326,6 +326,7 @@ run_checks() {
 	python3 .agents/skills/run-app/scripts/place.py --selftest || status=1
 	sh scripts/version.sh --selftest || status=1
 	bash scripts/build-cache-test.sh || status=1
+	bash scripts/conflict-risk-test.sh || status=1
 	python3 .agents/skills/release/scripts/capability-changes.py --selftest || status=1
 	python3 .agents/skills/release/scripts/release-plan.py --selftest || status=1
 	python3 .agents/skills/release/scripts/advisory.py --selftest || status=1
