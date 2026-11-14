@@ -1117,6 +1117,74 @@
       ],
       "additionalProperties": false
     },
+    "DeployDeliveryEnvironment": {
+      "type": "object",
+      "description": "One environment a deploy is part-of, in a DeployDeliveryFact (#5496): its name, its lineage ref and its tier.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "core.schema.json#/definitions/EnvironmentTier"
+        }
+      },
+      "required": [
+        "name",
+        "ref",
+        "tier"
+      ],
+      "additionalProperties": false
+    },
+    "DeployDeliveryFact": {
+      "type": "object",
+      "description": "One deploy a machine keeps (lineage-deploys.json, #5241), as deploys/delivery's figures need it (#5496): its lineage ref, its component (owner/name), its state, when it ended (its finish, else its start), whether a succeeded one is a rollback, the merge times of the PRs it brings (when the forge said them), the times health signals were seen in it, and its environments. Only refs, names, states and times (principle 7).",
+      "properties": {
+        "ref": {
+          "type": "string"
+        },
+        "component": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "core.schema.json#/definitions/DeployState"
+        },
+        "at": {
+          "$ref": "core.schema.json#/definitions/WireDate"
+        },
+        "rollback": {
+          "type": "boolean"
+        },
+        "merges": {
+          "type": "array",
+          "items": {
+            "$ref": "core.schema.json#/definitions/WireDate"
+          }
+        },
+        "health": {
+          "type": "array",
+          "items": {
+            "$ref": "core.schema.json#/definitions/WireDate"
+          }
+        },
+        "environments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeployDeliveryEnvironment"
+          }
+        }
+      },
+      "required": [
+        "ref",
+        "component",
+        "state",
+        "at",
+        "environments"
+      ],
+      "additionalProperties": false
+    },
     "DeployDeliveryTarget": {
       "type": "object",
       "description": "One target's DORA figures in deploys/delivery (#5245, spec 5239-deploy-model): a component (the repo, by default) in one environment, from the deploys this machine keeps. ended is the deploys that succeeded or failed in the range (a cancelled one is neither), failed those that failed, rollbacks the succeeded ones that put an older release back. deploymentFrequency is the succeeded deploys a week; leadTime is a PR's merge to the first succeeded deploy that brings it, the median and p90; changeFailureRate is the failed deploys and rollbacks over the ended ones, 0 to 1; recoveryTime is a failed deploy's end, or a health signal seen in a deploy, to the next succeeded deploy, the median. Each has a series of its weeks and DORA 2024's band, as Planning's Delivery row has them.",
@@ -1175,7 +1243,7 @@
     },
     "DeploysDelivery": {
       "type": "object",
-      "description": "deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most.",
+      "description": "deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most. From deploys/deliveryAll (#5496), deploys is how many deploys the copies of the machines in the scope keep, each once.",
       "properties": {
         "since": {
           "$ref": "core.schema.json#/definitions/WireDate"
@@ -1210,17 +1278,39 @@
     },
     "DeploysDeliveryRequest": {
       "type": "object",
-      "description": "deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said.",
+      "description": "deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said. scope is for deploys/deliveryAll (#5496): whose machines' copies the control plane reads, as reports/value's; a machine leaves it out.",
       "properties": {
         "range": {
           "$ref": "#/definitions/ReportRange"
         },
         "tier": {
           "$ref": "core.schema.json#/definitions/EnvironmentTier"
+        },
+        "scope": {
+          "$ref": "#/definitions/ReportScope"
         }
       },
       "required": [
         "range"
+      ],
+      "additionalProperties": false
+    },
+    "DeploysSync": {
+      "type": "object",
+      "description": "deploys/sync (#5496): every deploy a machine keeps, at most 1,000, in place of the control plane's copy of that machine's deploys. resolving is true while what some deploys bring is still being asked of the forge.",
+      "properties": {
+        "deploys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeployDeliveryFact"
+          }
+        },
+        "resolving": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "deploys"
       ],
       "additionalProperties": false
     },

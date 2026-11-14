@@ -169,6 +169,8 @@ func (d *Daemon) lineageDeployEvent(e wire.Event) {
 	}
 	deploy := repo.node(lineage.KindDeploy, "deploy", r.ID)
 	rec := d.keepDeploy(deploy.Ref, deployRecord{Deploy: p.Deploy, Environments: envs, Seen: wire.DateOf(nowFunc())})
+	// The control plane's copy of the deploys (#5496).
+	d.deploySyncSoon()
 	at := deployTime(rec)
 	var version wire.LineageNode
 	if v := rec.Deploy.Version; v.Name != nil && *v.Name != "" {
@@ -486,6 +488,8 @@ func (d *Daemon) workOutBrings(ref, prev string, repo forgeRepo, base, head stri
 		close(d.bringsIdle)
 		d.bringsIdle = nil
 	}
+	// The copy's lead time, and the next deploys to work out (#5496).
+	d.deploySyncSoon()
 }
 
 // prsBetween is the PRs of the commits after base up to head, by their squash titles or the

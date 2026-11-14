@@ -582,6 +582,7 @@ public extension DaemonAPI {
                 Row(Method.lineageWalkAll, params: LineageWalkAllRequest.self, result: LineageGraph.self, kind: .controlRequest),
                 Row(Method.buildsHistoryAll, params: JSONValue.self, result: JSONValue.self, kind: .controlRequest),
                 Row(Method.buildsRunAll, params: JSONValue.self, result: JSONValue.self, kind: .controlRequest),
+                Row(Method.deploysDeliveryAll, params: JSONValue.self, result: JSONValue.self, kind: .controlRequest),
                 Row(Method.lineageSessionsOn, params: LineageSessionsOnRequest.self, result: LineageSessionsOn.self,
                     kind: .controlRequest),
                 Row(Method.reportsPolicy, params: Empty.self, result: ReportPolicy.self, kind: .controlRequest),

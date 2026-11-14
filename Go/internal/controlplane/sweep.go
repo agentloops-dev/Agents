@@ -288,6 +288,12 @@ func sweep(ctx context.Context, rs *records.Records, now time.Time, most int, ev
 	if err != nil {
 		return report, err
 	}
+	// The copy of the deploys (#5496): a removed machine's.
+	deploys, err := sweepDeploys(ctx, s, rs, now, left-report.usage)
+	report.usage += deploys
+	if err != nil {
+		return report, err
+	}
 
 	if folder, ok := s.(*store.Folder); ok {
 		report.leftovers = folder.RemoveLeftovers(now.Add(-leftoversKept))

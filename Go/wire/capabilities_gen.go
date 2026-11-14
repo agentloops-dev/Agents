@@ -55,7 +55,9 @@ const CapCost1 = "cost/1"
 const CapCredentials1 = "credentials/1"
 const CapDaemon1 = "daemon/1"
 const CapDailySummary1 = "daily-summary/1"
+const CapDeploysCopy1 = "deploys.copy/1"
 const CapDeploysDelivery1 = "deploys.delivery/1"
+const CapDeploysRead1 = "deploys.read/1"
 const CapDeploysTargets1 = "deploys.targets/1"
 const CapDevice1 = "device/1"
 const CapDevices1 = "devices/1"
@@ -811,6 +813,8 @@ var ControlCapabilities = pairs([][2]string{
 	{"control/setFolderDetection", "control/1"},
 	{"control/setWeb", "control.local/1"},
 	{"control/status", "control/1"},
+	{"deploys/deliveryAll", "deploys.read/1"},
+	{"deploys/sync", "deploys.copy/1"},
 	{"folders/detected", "folders/1"},
 	{"git/credential", "git/1"},
 	{"governance/approvals", "governance/1"},
