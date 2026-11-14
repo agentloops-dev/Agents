@@ -71,10 +71,10 @@ Do one of these:
 - Right-click the Agent Loops icon in the Dock and choose the folder.
 
 The window has a sidebar of only that folder: its **Pinned** and
-**Needs You**, its sessions with **New Session** first, its workflows, **Archived Sessions** and **Archived Workflows**, and **Project Settings…** at the
+**Needs You**, its sessions, its workflows, **Archived Sessions** and **Archived Workflows**, and **Project Settings…** at the
 foot. A session you start or select there opens in that window. The window has its own
-inspector, and it keeps the pane and the width for that folder. Its toolbar also has the
-folder's shell (Control-`).
+inspector, and it keeps the pane and the width for that folder. Its toolbar has
+**New Session** over the sidebar, and the folder's shell (Control-`).
 
 When a session in another folder needs you, the toolbar shows **✋ N elsewhere**. Click it
 to go to the first of them.

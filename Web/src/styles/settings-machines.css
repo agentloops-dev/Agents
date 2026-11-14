@@ -82,8 +82,6 @@ dialog.sheet:has(.account-details) { width: min(600px, calc(100vw - 32px)); max-
 .machine-swipe.trailing { justify-content: flex-end; }
 .machine-swipe.stop, .machine-swipe.remove { background: var(--paper-rule); color: inherit; }
 .machine-swipe.delete { background: var(--tint-failure); }
-/* + New Machine, the Machines group's last row (#5265): the mark in the accent, as the Remote's. */
-.new-machine-row .new-mark { color: var(--accent); }
 .team-workflows { display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
 .bot-card { border: 1px solid var(--paper-rule); border-radius: var(--radius-card); padding: 10px 12px; background: var(--paper-raised); }
 .bot-card h3 { margin: 0 0 2px; font-size: 0.875rem; }

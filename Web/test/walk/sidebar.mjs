@@ -75,8 +75,9 @@ try {
   say(`session: ${await hash()}`);
   await page.shot(`${out}/3-session-selected.png`);
 
-  // 4: a folder's New session row (#375) opens its new session; only that row lights.
-  await page.eval(`[...document.querySelectorAll(".sidebar .folder-fold")].find((f) => f.querySelector(".row.folder .pick").innerText.startsWith("Agents")).querySelector(".row.new-session .pick").click()`);
+  // 4: New Session in the + (#5447) opens a new session in the folder last started in.
+  await page.eval(`document.querySelector("button[aria-label='New folder']").click()`);
+  await page.eval(`[...document.querySelectorAll("[role=menu][aria-label='New folder'] [role=menuitem]")].find((b) => b.textContent === "New Session").click()`);
   await page.waitFor(`document.querySelector(".new-agent")`, 10_000);
   await sleep(500);
   say(`folder: ${await hash()}; lit: ${js(await page.eval(`[...document.querySelectorAll(".sidebar .chosen")].map((e) => e.innerText.split("\\n")[0])`))}`);
