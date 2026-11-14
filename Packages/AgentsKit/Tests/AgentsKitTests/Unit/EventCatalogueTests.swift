@@ -13,8 +13,9 @@ struct EventCatalogueTests {
         // and agent.archived (#96), and
         // mac.disk_low and mac.disk_ok (#195, machine.* since #372), folder.idle (#360),
         // and agent.messaged (#560), and system.restarted (#1219), and agent.ended (#3799), and
-        // file.added and file.removed (#3795), which took dropbox.file_added's place (#231, #3796).
-        #expect(names.count == 33)
+        // file.added and file.removed (#3795), which took dropbox.file_added's place (#231, #3796),
+        // and agent.permission_answered (#5440).
+        #expect(names.count == 34)
         for name in ["system.restarted", "cost.allowance_out", "cost.allowance_back", "agent.archive_requested", "agent.archived",
                      "machine.disk_low", "machine.disk_ok", "folder.idle", "file.added", "file.removed",
                      "agent.messaged", "agent.waiting"] {

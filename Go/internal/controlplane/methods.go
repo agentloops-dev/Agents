@@ -125,6 +125,7 @@ var own = methodSet(
 	"lineage/walkAll",
 	"builds/historyAll",
 	"builds/runAll",
+	"deploys/deliveryAll",
 	"links/approve",
 	"links/deny",
 	"links/list",
@@ -386,7 +387,7 @@ func (m *Methods) Handle(method string, params json.RawMessage, from Caller) (an
 	case "control/status":
 		return m.status(from), nil
 	case "machines/list":
-		return m.hostList(from), nil
+		return m.hostList(from, params)
 	case "clients/list", "devices/list":
 		// The caller's person's own clients (#994).
 		out := []wire.ClientRecord{}
@@ -422,6 +423,8 @@ func (m *Methods) Handle(method string, params json.RawMessage, from Caller) (an
 		return m.lineageReadMethod(ctx, method, params, from)
 	case wire.CallBuildsHistoryAll.Name, wire.CallBuildsRunAll.Name:
 		return m.buildsReadMethod(ctx, method, params, from)
+	case wire.CallDeploysDeliveryAll.Name:
+		return m.deploysReadMethod(ctx, params, from)
 	case "links/list", "links/requests", "links/approve", "links/deny", "links/remove":
 		return m.linksMethod(ctx, method, params, from)
 	case "lock/get", "lock/add", "lock/reset":
@@ -808,15 +811,22 @@ func (m *Methods) SetWeb(status *web.Status) {
 }
 
 // hostList is the caller's own machines (#994): another's are in People, by name and
-// state only.
-func (m *Methods) hostList(from Caller) []wire.ControlMachine {
-	out := []wire.ControlMachine{}
-	for _, h := range m.records.Hosts() {
-		if m.owns(from, h.ID) {
-			out = append(out, m.hostRow(h))
+// state only. With no query it is every one, up to the cap, as an array; with one (#5283) it
+// is a page, filtered and sorted, with the counts for each filter's values.
+func (m *Methods) hostList(from Caller, params json.RawMessage) (any, error) {
+	var query wire.MachineListQuery
+	if len(bytes.TrimSpace(params)) > 0 && string(bytes.TrimSpace(params)) != "null" {
+		if err := json.Unmarshal(params, &query); err != nil {
+			return nil, fail(invalidParams, "machines/list: %v", err)
 		}
 	}
-	return out
+	var rows []machineFacts
+	for _, h := range m.records.Hosts() {
+		if m.owns(from, h.ID) {
+			rows = append(rows, m.machineFactsOf(h))
+		}
+	}
+	return m.listMachines(rows, query)
 }
 
 // ownHostNamed is a machine as a caller names it: by its id, or by the name of one of the
@@ -1320,6 +1330,12 @@ func (m *Methods) HostSaid(host, method string, params json.RawMessage) (any, er
 			return nil, err
 		}
 		return m.s.keepBuildsSync(ctx, host, sync, time.Now())
+	case wire.CallDeploysSync.Name:
+		sync, err := require[wire.DeploysSync](params, "DeploysSync")
+		if err != nil {
+			return nil, err
+		}
+		return m.s.keepDeploysSync(ctx, host, sync, time.Now())
 	case "lineage/sync":
 		sync, err := require[wire.LineageSync](params, "LineageSync")
 		if err != nil {

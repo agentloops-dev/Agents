@@ -178,6 +178,9 @@ func (rt *readTokens) serve(w http.ResponseWriter, r *http.Request) {
 		period = wire.ReportRangeMonth
 	}
 	scope := &wire.ReportScope{Kind: wire.ReportScopeKindOrg}
+	if project := q.Get("project"); project != "" {
+		scope = &wire.ReportScope{Kind: wire.ReportScopeKindProject, Project: &project}
+	}
 	if q.Get("report") == "delivery" {
 		rt.serveDelivery(w, r, scope, t.Made.By.User, now)
 		return

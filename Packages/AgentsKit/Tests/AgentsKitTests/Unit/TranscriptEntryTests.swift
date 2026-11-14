@@ -25,6 +25,17 @@ struct TranscriptEntryTests {
         #expect(read.kind == entry.kind)
     }
 
+    /// #5440: a card the lead answered keeps who chose, and says it.
+    @Test func aLeadsAnswerKeepsWhoChose() throws {
+        let entry = TranscriptEntry(kind: .permissionAnswered(optionID: "yes", optionName: "Allow once",
+                                                              answeredBy: "A1", answeredByTitle: "Lead"))
+        let read = try JSONDecoder().decode(TranscriptEntry.self, from: JSONEncoder().encode(entry))
+        #expect(read.kind == entry.kind)
+        #expect(TranscriptEntry.chooser(answeredBy: "A1", title: "Lead") == "Lead chose")
+        #expect(TranscriptEntry.chooser(answeredBy: "A1", title: " ") == "The session that started it chose")
+        #expect(TranscriptEntry.chooser(answeredBy: nil, title: nil) == "You chose")
+    }
+
     @Test func copyTakesTheWholeMessageAsWritten() throws {
         // Streamed chunks, joined the way the chat joins them: one message, every word.
         let chunks = TranscriptEntry.coalesced([

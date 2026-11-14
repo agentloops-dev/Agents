@@ -98,3 +98,10 @@ dialog.sheet:has(.account-details) { width: min(600px, calc(100vw - 32px)); max-
 .report-policy .budget-field input { width: 7em; text-align: right; }
 .report-policy .sheet-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
 
+
+/* A machine page's Sessions (#5490). */
+.machine-session-group h4 { margin: 10px 0 2px; font-weight: 600; }
+.machine-session { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; }
+.machine-session-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.machine-session-branch { display: none; }
+@media (min-width: 900px) { .machine-session-branch { display: inline; } }

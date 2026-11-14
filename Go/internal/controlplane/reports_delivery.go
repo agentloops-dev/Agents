@@ -85,11 +85,12 @@ func (s *Service) keptDelivery(ctx context.Context, keep func(person string) boo
 // deliveryReport is the delivery figures of a scope that user may see: the Read API's
 // report=delivery (#4555).
 func (s *Service) deliveryReport(ctx context.Context, scope *wire.ReportScope, user string, now time.Time) ([]wire.ReportDelivery, error) {
-	_, keep, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
+	scope, keep, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
 	if err != nil {
 		return nil, err
 	}
 	nodes, err := s.scopeLineage(ctx, keep)
+	nodes = s.projectNodes(ctx, nodes, scope)
 	if err != nil {
 		return nil, err
 	}

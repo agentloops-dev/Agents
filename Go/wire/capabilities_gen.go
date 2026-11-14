@@ -25,8 +25,8 @@ const CapBringBack1 = "bring.back/1"
 const CapBrowser1 = "browser/1"
 const CapBrowser2 = "browser/2"
 const CapBuildsCopy1 = "builds.copy/1"
-const CapBuildsRead1 = "builds.read/1"
-const CapBuildsTrends1 = "builds.trends/1"
+const CapBuildsRead2 = "builds.read/2"
+const CapBuildsTrends2 = "builds.trends/2"
 const CapCapacity1 = "capacity/1"
 const CapCatalog1 = "catalog/1"
 const CapChangesUndo1 = "changes.undo/1"
@@ -55,7 +55,9 @@ const CapCost1 = "cost/1"
 const CapCredentials1 = "credentials/1"
 const CapDaemon1 = "daemon/1"
 const CapDailySummary1 = "daily-summary/1"
+const CapDeploysCopy1 = "deploys.copy/1"
 const CapDeploysDelivery1 = "deploys.delivery/1"
+const CapDeploysRead1 = "deploys.read/1"
 const CapDeploysTargets1 = "deploys.targets/1"
 const CapDevice1 = "device/1"
 const CapDevices1 = "devices/1"
@@ -122,6 +124,7 @@ const CapLineageFigures1 = "lineage.figures/1"
 const CapLineageForecast1 = "lineage.forecast/1"
 const CapLineageGraph1 = "lineage.graph/1"
 const CapLineageRead1 = "lineage.read/1"
+const CapLineageRead2 = "lineage.read/2"
 const CapLineageSessions1 = "lineage.sessions/1"
 const CapLineage1 = "lineage/1"
 const CapLinks1 = "links/1"
@@ -136,6 +139,7 @@ const CapMachineAccounts2 = "machine.accounts/2"
 const CapMachineUsage1 = "machine.usage/1"
 const CapMachine1 = "machine/1"
 const CapMachines1 = "machines/1"
+const CapMachines2 = "machines/2"
 const CapMailbox1 = "mailbox/1"
 const CapMarketplaces1 = "marketplaces/1"
 const CapMcpToolLevels1 = "mcp.tool-levels/1"
@@ -175,13 +179,15 @@ const CapProviders1 = "providers/1"
 const CapProviders2 = "providers/2"
 const CapReadapi1 = "readapi/1"
 const CapRelay1 = "relay/1"
-const CapReportsNodes1 = "reports.nodes/1"
+const CapReportsNodes2 = "reports.nodes/2"
 const CapReportsProblem1 = "reports.problem/1"
 const CapReportsScope1 = "reports.scope/1"
 const CapReportsScope2 = "reports.scope/2"
-const CapReportsValue1 = "reports.value/1"
+const CapReportsValue2 = "reports.value/2"
 const CapReportsViews1 = "reports.views/1"
+const CapReportsViews2 = "reports.views/2"
 const CapReports1 = "reports/1"
+const CapReports2 = "reports/2"
 const CapRequestsDefer1 = "requests.defer/1"
 const CapRequests1 = "requests/1"
 const CapResourcesLeases1 = "resources.leases/1"
@@ -224,6 +230,7 @@ const CapVelocity1 = "velocity/1"
 const CapViews1 = "views/1"
 const CapWake1 = "wake/1"
 const CapWorkFeatures1 = "work.features/1"
+const CapWorkSuggestLeads1 = "work.suggest-leads/1"
 const CapWorkTimeline1 = "work.timeline/1"
 const CapWorkflow1 = "workflow/1"
 const CapWorkflows1 = "workflows/1"
@@ -305,8 +312,8 @@ var HostCapabilities = pairs([][2]string{
 	{"browser/watch", "browser/1"},
 	{"browserControl/set", "host.drive-approval/1"},
 	{"browserControl/state", "host.drive-approval/1"},
-	{"builds/history", "builds.trends/1"},
-	{"builds/run", "builds.trends/1"},
+	{"builds/history", "builds.trends/2"},
+	{"builds/run", "builds.trends/2"},
 	{"capacity/state", "capacity/1"},
 	{"catalog/destination-state", "catalog/1"},
 	{"catalog/preview", "catalog/1"},
@@ -616,7 +623,9 @@ var HostCapabilities = pairs([][2]string{
 	{"wake/set", "wake/1"},
 	{"wake/settings", "wake/1"},
 	{"wake/state", "wake/1"},
+	{"work/dismiss-lead", "work.suggest-leads/1"},
 	{"work/features", "work.features/1"},
+	{"work/suggest-leads", "work.suggest-leads/1"},
 	{"work/timeline", "work.timeline/1"},
 	{"workflows/approve", "workflows/1"},
 	{"workflows/archive", "workflows/1"},
@@ -777,8 +786,8 @@ var ControlCapabilities = pairs([][2]string{
 	{"bots/make", "bots/1"},
 	{"bots/setCaps", "bots/1"},
 	{"bots/stopRun", "bots/1"},
-	{"builds/historyAll", "builds.read/1"},
-	{"builds/runAll", "builds.read/1"},
+	{"builds/historyAll", "builds.read/2"},
+	{"builds/runAll", "builds.read/2"},
 	{"builds/sync", "builds.copy/1"},
 	{"bus/lease", "events.leases/1"},
 	{"bus/log", "events.bus/1"},
@@ -812,6 +821,8 @@ var ControlCapabilities = pairs([][2]string{
 	{"control/setFolderDetection", "control/1"},
 	{"control/setWeb", "control.local/1"},
 	{"control/status", "control/1"},
+	{"deploys/deliveryAll", "deploys.read/1"},
+	{"deploys/sync", "deploys.copy/1"},
 	{"folders/detected", "folders/1"},
 	{"git/credential", "git/1"},
 	{"governance/approvals", "governance/1"},
@@ -826,9 +837,9 @@ var ControlCapabilities = pairs([][2]string{
 	{"groups/set", "groups/1"},
 	{"groups/setRole", "org-identity/1"},
 	{"handover/status", "handover/1"},
-	{"lineage/sessionsOn", "lineage.read/1"},
+	{"lineage/sessionsOn", "lineage.read/2"},
 	{"lineage/sync", "lineage.graph/1"},
-	{"lineage/walkAll", "lineage.read/1"},
+	{"lineage/walkAll", "lineage.read/2"},
 	{"links/approve", "links/1"},
 	{"links/check", "links/1"},
 	{"links/deny", "links/1"},
@@ -880,8 +891,8 @@ var ControlCapabilities = pairs([][2]string{
 	{"machines/lendGit", "machines/1"},
 	{"machines/lendSignIn", "machines/1"},
 	{"machines/link", "machines/1"},
-	{"machines/list", "machines/1"},
-	{"machines/listKept", "machines/1"},
+	{"machines/list", "machines/2"},
+	{"machines/listKept", "machines/2"},
 	{"machines/projectFolders", "sessions.project/1"},
 	{"machines/projectSessions", "sessions.project/1"},
 	{"machines/remove", "machines/1"},
@@ -952,14 +963,14 @@ var ControlCapabilities = pairs([][2]string{
 	{"readApi/make", "readapi/1"},
 	{"readApi/revoke", "readapi/1"},
 	{"reports/deleteView", "reports.views/1"},
-	{"reports/export", "reports/1"},
-	{"reports/nodes", "reports.nodes/1"},
+	{"reports/export", "reports/2"},
+	{"reports/nodes", "reports.nodes/2"},
 	{"reports/policy", "reports.scope/1"},
-	{"reports/saveView", "reports.views/1"},
+	{"reports/saveView", "reports.views/2"},
 	{"reports/scopes", "reports.scope/1"},
 	{"reports/setPolicy", "reports.scope/2"},
-	{"reports/usage", "reports/1"},
-	{"reports/value", "reports.value/1"},
+	{"reports/usage", "reports/2"},
+	{"reports/value", "reports.value/2"},
 	{"reports/views", "reports.views/1"},
 	{"scim/set", "org-identity/1"},
 	{"scim/tokens/list", "org-identity/1"},

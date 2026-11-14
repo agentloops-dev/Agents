@@ -433,6 +433,7 @@ func (d *Daemon) startReports() {
 					d.sendGovernanceReport()
 					d.sendLineage()
 					d.sendCITimings()
+					d.sendDeploys(false)
 				}
 			}
 		})

@@ -279,6 +279,21 @@ func (r *Router) Described(host string) map[string]any {
 	return r.describedLocked(host)
 }
 
+// LastSeen is when a host was last seen (#5283): now while it is online, else when its state
+// last changed (offline since). The zero time for one never heard of.
+func (r *Router) LastSeen(host string) time.Time {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	s, ok := r.states[host]
+	switch {
+	case !ok:
+		return time.Time{}
+	case s.online():
+		return time.Now()
+	}
+	return s.Since
+}
+
 func (r *Router) describedLocked(host string) map[string]any {
 	s, ok := r.states[host]
 	if !ok {

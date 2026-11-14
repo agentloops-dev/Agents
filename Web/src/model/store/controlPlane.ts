@@ -7,6 +7,7 @@ import { openCaps } from "../teamGroups";
 import { knowPublicViews } from "../../place";
 import { hostAnswers } from "../capabilities";
 import { Capability } from "../../protocol/capabilities.generated";
+import { machineRows } from "./shared";
 import { providerManaged, withoutJoin } from "../people";
 import { orgNames } from "../signIn";
 import { withoutRequest } from "../channelLinks";
@@ -60,10 +61,10 @@ export const controlPlaneMethods = {
         this.loadPeople().then(() => Promise.all([this.loadLinkRequests(), this.loadGovernanceRequests(), this.loadBudgetRequests(),
           this.loadRemoveRequests()])),
         this.loadSignInRequests()]);
-      this.takeHosts(hosts);
+      this.takeHosts(machineRows(hosts));
       // A machine this device's copy drew that the control plane no longer lists goes (#4790).
       for (const host of this.fromDevice.value) {
-        if (hosts.some((h) => h.id === host)) continue;
+        if (machineRows(hosts).some((h) => h.id === host)) continue;
         this.forgetHost(host);
         this.answered(host);
       }

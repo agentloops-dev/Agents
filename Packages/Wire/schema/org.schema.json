@@ -2714,6 +2714,50 @@
       },
       "additionalProperties": false
     },
+    "MachineCounts": {
+      "type": "object",
+      "description": "For each filter, how many machines have each of its values, among those every other filter lets through (so a chip says what picking it would show). A machine with no value for a filter is not counted in it.",
+      "properties": {
+        "state": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "provider": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "os": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "version": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "state",
+        "labels",
+        "provider",
+        "os",
+        "version"
+      ],
+      "additionalProperties": false
+    },
     "MachineJoinAsk": {
       "type": "object",
       "description": "POST /v1/join (#994, spec 736 FR-017): a machine with no code asks to join. `person` names whose it is to be, by name or id; with none, an admin approves it.",
@@ -2816,6 +2860,76 @@
         "code",
         "expires"
       ],
+      "additionalProperties": false
+    },
+    "MachineList": {
+      "type": "object",
+      "description": "machines/list (#5283) when it was given a query: a page of machines, the cursor of the next page (absent on the last), how many match in all, and the counts for each filter's values.",
+      "properties": {
+        "machines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ControlMachine"
+          }
+        },
+        "next": {
+          "type": "string"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "counts": {
+          "$ref": "#/definitions/MachineCounts"
+        }
+      },
+      "required": [
+        "machines",
+        "total",
+        "counts"
+      ],
+      "additionalProperties": false
+    },
+    "MachineListQuery": {
+      "type": "object",
+      "description": "machines/list (#5283): what to show, as the Machines page asks for it. Every field is optional; with none, the answer is the plain array of up to 200 machines, as before. `query` matches a name, id or label, any case. `state`, `provider`, `os` and `version` each match one value; `labels` matches a machine that has every one. `sort` is name (the default), state, lastSeen (latest first) or version. `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "provider": {
+          "type": "string"
+        },
+        "os": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "sort": {
+          "type": "string",
+          "enum": [
+            "name",
+            "state",
+            "lastSeen",
+            "version"
+          ]
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
       "additionalProperties": false
     },
     "MachinePolicy": {
@@ -4329,7 +4443,9 @@
       "type": "object",
       "description": "policy/askForMore (#3262, spec 998 FR-019): a person at their organisation's budget asks an admin to raise it for today.",
       "properties": {
-        "why": { "type": "string" }
+        "why": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     },
@@ -4590,9 +4706,13 @@
       "type": "object",
       "description": "policy/refuseMore (#3262), an admin's: refuse an Ask for More. policy/raise with the request's id raises it.",
       "properties": {
-        "request": { "type": "string" }
+        "request": {
+          "type": "string"
+        }
       },
-      "required": ["request"],
+      "required": [
+        "request"
+      ],
       "additionalProperties": false
     },
     "PolicyRuleLine": {

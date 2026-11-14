@@ -4008,6 +4008,34 @@ type DeployComponent struct {
 	Repo *string `json:"repo,omitzero"`
 }
 
+// One environment a deploy is part-of, in a DeployDeliveryFact (#5496): its name, its lineage ref and its tier.
+type DeployDeliveryEnvironment struct {
+	Name string `json:"name"`
+
+	Ref string `json:"ref"`
+
+	Tier EnvironmentTier `json:"tier"`
+}
+
+// One deploy a machine keeps (lineage-deploys.json, #5241), as deploys/delivery's figures need it (#5496): its lineage ref, its component (owner/name), its state, when it ended (its finish, else its start), whether a succeeded one is a rollback, the merge times of the PRs it brings (when the forge said them), the times health signals were seen in it, and its environments. Only refs, names, states and times (principle 7).
+type DeployDeliveryFact struct {
+	Ref string `json:"ref"`
+
+	Component string `json:"component"`
+
+	State DeployState `json:"state"`
+
+	At Date `json:"at"`
+
+	Rollback *bool `json:"rollback,omitzero"`
+
+	Merges []Date `json:"merges,omitzero"`
+
+	Health []Date `json:"health,omitzero"`
+
+	Environments []DeployDeliveryEnvironment `json:"environments"`
+}
+
 // One target's DORA figures in deploys/delivery (#5245, spec 5239-deploy-model): a component (the repo, by default) in one environment, from the deploys this machine keeps. ended is the deploys that succeeded or failed in the range (a cancelled one is neither), failed those that failed, rollbacks the succeeded ones that put an older release back. deploymentFrequency is the succeeded deploys a week; leadTime is a PR's merge to the first succeeded deploy that brings it, the median and p90; changeFailureRate is the failed deploys and rollbacks over the ended ones, 0 to 1; recoveryTime is a failed deploy's end, or a health signal seen in a deploy, to the next succeeded deploy, the median. Each has a series of its weeks and DORA 2024's band, as Planning's Delivery row has them.
 type DeployDeliveryTarget struct {
 	// The component's id: owner/name for a repo.
@@ -4136,7 +4164,7 @@ type DeployVersion struct {
 	Ref *string `json:"ref,omitzero"`
 }
 
-// deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most.
+// deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most. From deploys/deliveryAll (#5496), deploys is how many deploys the copies of the machines in the scope keep, each once.
 type DeploysDelivery struct {
 	Since Date `json:"since"`
 
@@ -4151,11 +4179,20 @@ type DeploysDelivery struct {
 	Resolving *bool `json:"resolving,omitzero"`
 }
 
-// deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said.
+// deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said. scope is for deploys/deliveryAll (#5496): whose machines' copies the control plane reads, as reports/value's; a machine leaves it out.
 type DeploysDeliveryRequest struct {
 	Range ReportRange `json:"range"`
 
 	Tier *EnvironmentTier `json:"tier,omitzero"`
+
+	Scope *ReportScope `json:"scope,omitzero"`
+}
+
+// deploys/sync (#5496): every deploy a machine keeps, at most 1,000, in place of the control plane's copy of that machine's deploys. resolving is true while what some deploys bring is still being asked of the forge.
+type DeploysSync struct {
+	Deploys []DeployDeliveryFact `json:"deploys"`
+
+	Resolving *bool `json:"resolving,omitzero"`
 }
 
 // The live tile's latest look at the Mac's screen while an agent holds the screen lease (#3004, US4, FR-011): a downscaled JPEG of the whole screen, base64, or, while the screen is locked, locked and no image (FR-012). Sent only to the clients showing that agent, never recorded, never replayed (FR-016).
@@ -6627,6 +6664,28 @@ type KeptDelivered struct {
 
 type KeptList struct {
 	Kept []KeptRequest `json:"kept"`
+
+	// The cursor of the next page; absent on the last (#5283).
+	Next *string `json:"next,omitzero"`
+
+	// For each kind, how many kept requests match the other filters (#5283).
+	Counts *KeptListCounts `json:"counts,omitzero"`
+}
+
+// For each kind, how many kept requests match the other filters (#5283).
+type KeptListCounts struct {
+	Kind map[string]int64 `json:"kind"`
+}
+
+// machines/listKept (#5283): optional. `query` matches the text, kind or machine; `kind` one kind; `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.
+type KeptListQuery struct {
+	Query *string `json:"query,omitzero"`
+
+	Kind *string `json:"kind,omitzero"`
+
+	Limit *int64 `json:"limit,omitzero"`
+
+	Cursor *string `json:"cursor,omitzero"`
 }
 
 type KeptRequest struct {
@@ -8618,6 +8677,19 @@ type MachineClients struct {
 	User *string `json:"user,omitzero"`
 }
 
+// For each filter, how many machines have each of its values, among those every other filter lets through (so a chip says what picking it would show). A machine with no value for a filter is not counted in it.
+type MachineCounts struct {
+	State map[string]int64 `json:"state"`
+
+	Labels map[string]int64 `json:"labels"`
+
+	Provider map[string]int64 `json:"provider"`
+
+	Os map[string]int64 `json:"os"`
+
+	Version map[string]int64 `json:"version"`
+}
+
 // machines/startEnroll (#1761): with as, a bot's machine code, an admin's only. Without, the caller's own, as before.
 type MachineEnroll struct {
 	As *string `json:"as,omitzero"`
@@ -8798,6 +8870,38 @@ type MachineLink struct {
 	StopWhenIdleMinutes *int64 `json:"stopWhenIdleMinutes,omitzero"`
 
 	Trust *string `json:"trust,omitzero"`
+}
+
+// machines/list (#5283) when it was given a query: a page of machines, the cursor of the next page (absent on the last), how many match in all, and the counts for each filter's values.
+type MachineList struct {
+	Machines []ControlMachine `json:"machines"`
+
+	Next *string `json:"next,omitzero"`
+
+	Total int64 `json:"total"`
+
+	Counts MachineCounts `json:"counts"`
+}
+
+// machines/list (#5283): what to show, as the Machines page asks for it. Every field is optional; with none, the answer is the plain array of up to 200 machines, as before. `query` matches a name, id or label, any case. `state`, `provider`, `os` and `version` each match one value; `labels` matches a machine that has every one. `sort` is name (the default), state, lastSeen (latest first) or version. `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.
+type MachineListQuery struct {
+	Query *string `json:"query,omitzero"`
+
+	State *string `json:"state,omitzero"`
+
+	Labels []string `json:"labels,omitzero"`
+
+	Provider *string `json:"provider,omitzero"`
+
+	Os *string `json:"os,omitzero"`
+
+	Version *string `json:"version,omitzero"`
+
+	Sort *string `json:"sort,omitzero"`
+
+	Limit *int64 `json:"limit,omitzero"`
+
+	Cursor *string `json:"cursor,omitzero"`
 }
 
 // machines/setMachineOptions. stopWhenIdleMinutes 0 turns it off.
@@ -12487,13 +12591,17 @@ type ReportRow struct {
 // Whose rows a report adds up (#1804).
 type ReportScope struct {
 	Kind ReportScopeKind `json:"kind"`
+
+	// The project's id, for kind project (#5277): the rows whose folder is in the project, on every machine.
+	Project *string `json:"project,omitzero"`
 }
 
-// Me (the caller's own machines) or every person (#1804). There is no group lens (#5278).
+// Me (the caller's own machines), every person (#1804), or a project's folders on every machine (#5277). There is no group lens (#5278).
 type ReportScopeKind string
 
 const ReportScopeKindMe ReportScopeKind = "me"
 const ReportScopeKindOrg ReportScopeKind = "org"
+const ReportScopeKindProject ReportScopeKind = "project"
 
 // A scope the caller may see, with its name (#1804).
 type ReportScopeOption struct {
@@ -12502,7 +12610,7 @@ type ReportScopeOption struct {
 	Name string `json:"name"`
 }
 
-// reports/scopes' answer (#1804): Me, and the organisation for an admin.
+// reports/scopes' answer (#1804): Me, every project (#5277), and the organisation for an admin.
 type ReportScopes struct {
 	Scopes []ReportScopeOption `json:"scopes"`
 
@@ -15448,6 +15556,12 @@ type TranscriptEntryKindPermissionAnswered struct {
 	OptionID string `json:"optionID"`
 
 	OptionName *string `json:"optionName,omitzero"`
+
+	// The session that answered it: the one that started this agent, with answer_permission (#5440). Absent when the person answered.
+	AnsweredBy *UUID `json:"answeredBy,omitzero"`
+
+	// That session's title when it answered, for "<title> chose …" (#5440).
+	AnsweredByTitle *string `json:"answeredByTitle,omitzero"`
 }
 
 type TranscriptEntryKindOptionChanged struct {
@@ -16336,6 +16450,11 @@ const WeekdayThu Weekday = "thu"
 const WeekdayFri Weekday = "fri"
 const WeekdaySat Weekday = "sat"
 
+// work/dismiss-lead (#5458): hide an epic from the suggestions until the epic changes or a lead of it ends. The list is the person's, kept on this machine.
+type WorkDismissLeadRequest struct {
+	Node LineageNode `json:"node"`
+}
+
 // A feature in work/features (#4586): feature is it as forge/features says it. epics are its open epics, the newest first, each with where it is in its plan and its children. loose are its open issues that are not epics and have no parent (of the newest 500 open issues), the newest update first, as children are: when each started, and whether it waits for a person.
 type WorkFeature struct {
 	Feature ForgeFeature `json:"feature"`
@@ -16377,6 +16496,33 @@ type WorkFeaturesRequest struct {
 	Board *string `json:"board,omitzero"`
 }
 
+// An open epic with no lead, as work/suggest-leads says it (#5458, epic #5457). node, title and url are the epic's; folder is a folder on this machine on its repo; milestone is its name and due its due date (YYYY-MM-DD) where the forge says them. done and total are its children closed and all (0 and 0 for a standing epic, whose plan is a query). high says an open child has the label priority:high, and ui that an open child is a story (a person can see or use it: a client changes); the order says why. start is the new-agent form Start lead fills: the prompt, the labels #<n> and lead, and no worktree. It starts nothing.
+type WorkLeadSuggestion struct {
+	Node LineageNode `json:"node"`
+
+	Title string `json:"title"`
+
+	URL *string `json:"url,omitzero"`
+
+	Folder *string `json:"folder,omitzero"`
+
+	Milestone *string `json:"milestone,omitzero"`
+
+	Due *string `json:"due,omitzero"`
+
+	Done int64 `json:"done"`
+
+	Total int64 `json:"total"`
+
+	High *bool `json:"high,omitzero"`
+
+	Ui *bool `json:"ui,omitzero"`
+
+	Standing *bool `json:"standing,omitzero"`
+
+	Start ForgeStart `json:"start"`
+}
+
 // How a turn ended (#1916): only a question needs the person. A value this build does not know, such as an old record's `blocked`, `stuck` or `partly_done`, reads as `done`.
 type WorkOutcome string
 
@@ -16411,6 +16557,20 @@ type WorkReport struct {
 	At Date `json:"at"`
 
 	Block *Block `json:"block,omitzero"`
+}
+
+// work/suggest-leads (#5458): New Session's Suggested section, from the forge's open epics and this machine's sessions. suggestions are at most 3 epics with no lead (no session that is not archived has both #<epic> and lead), ranked: an epic with priority:high children first, then one with UI children, then the earliest milestone due date, then the one nearest to done. more is how many more there are, for N more in Work. An epic the person dismissed is left out until it changes or a lead has ended. errors say a forge that could not be read.
+type WorkSuggestLeads struct {
+	Suggestions []WorkLeadSuggestion `json:"suggestions"`
+
+	More int64 `json:"more"`
+
+	Errors []ForgeListError `json:"errors,omitzero"`
+}
+
+// work/suggest-leads (#5458): the epics of every folder on this machine, or of one folder's repo.
+type WorkSuggestLeadsRequest struct {
+	Folder *string `json:"folder,omitzero"`
 }
 
 // work/timeline (#4172, specs/time-stream/wireframe.md sections 4, 7 to 9): the epics of a project whose work overlaps from to to, each with its children, its segments and, while open, its forecast (M10); and the releases published in the window. timeZone is the working clock's: this host's, an IANA name, absent when it has none. backtest is how the forecast did on the epics whose work ended in the last 30 days, run again at most once a day; absent when there are too few. errors are the forges that could not be read, as forge/issues says them.

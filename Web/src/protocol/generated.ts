@@ -3723,6 +3723,34 @@ export interface DeployComponent {
 }
 
 /**
+ * One environment a deploy is part-of, in a DeployDeliveryFact (#5496): its name, its lineage ref
+ * and its tier.
+ */
+export interface DeployDeliveryEnvironment {
+  name: string;
+  ref: string;
+  tier: EnvironmentTier;
+}
+
+/**
+ * One deploy a machine keeps (lineage-deploys.json, #5241), as deploys/delivery's figures need it
+ * (#5496): its lineage ref, its component (owner/name), its state, when it ended (its finish, else
+ * its start), whether a succeeded one is a rollback, the merge times of the PRs it brings (when the
+ * forge said them), the times health signals were seen in it, and its environments. Only refs,
+ * names, states and times (principle 7).
+ */
+export interface DeployDeliveryFact {
+  ref: string;
+  component: string;
+  state: DeployState;
+  at: WireDate;
+  rollback?: boolean;
+  merges?: WireDate[];
+  health?: WireDate[];
+  environments: DeployDeliveryEnvironment[];
+}
+
+/**
  * One target's DORA figures in deploys/delivery (#5245, spec 5239-deploy-model): a component (the
  * repo, by default) in one environment, from the deploys this machine keeps. ended is the deploys
  * that succeeded or failed in the range (a cancelled one is neither), failed those that failed,
@@ -3866,7 +3894,8 @@ export interface DeployVersion {
  * production first, then by tier and the most deploys. resolving is true while what some deploys
  * bring is still being asked of the forge, so lead time may grow on the next read. deploys is how
  * many deploys this machine keeps, of every target and age, so a page can pick the machine that
- * knows most.
+ * knows most. From deploys/deliveryAll (#5496), deploys is how many deploys the copies of the
+ * machines in the scope keep, each once.
  */
 export interface DeploysDelivery {
   since: WireDate;
@@ -3879,11 +3908,24 @@ export interface DeploysDelivery {
 
 /**
  * deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the
- * range (day is the last 7 days, as week), of one tier or of every tier when none is said.
+ * range (day is the last 7 days, as week), of one tier or of every tier when none is said. scope is
+ * for deploys/deliveryAll (#5496): whose machines' copies the control plane reads, as
+ * reports/value's; a machine leaves it out.
  */
 export interface DeploysDeliveryRequest {
   range: ReportRange;
   tier?: EnvironmentTier;
+  scope?: ReportScope;
+}
+
+/**
+ * deploys/sync (#5496): every deploy a machine keeps, at most 1,000, in place of the control
+ * plane's copy of that machine's deploys. resolving is true while what some deploys bring is still
+ * being asked of the forge.
+ */
+export interface DeploysSync {
+  deploys: DeployDeliveryFact[];
+  resolving?: boolean;
 }
 
 /**
@@ -6097,6 +6139,21 @@ export interface KeptDelivered {
 
 export interface KeptList {
   kept: KeptRequest[];
+  /** The cursor of the next page; absent on the last (#5283). */
+  next?: string;
+  /** For each kind, how many kept requests match the other filters (#5283). */
+  counts?: { kind: Record<string, number> };
+}
+
+/**
+ * machines/listKept (#5283): optional. `query` matches the text, kind or machine; `kind` one kind;
+ * `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.
+ */
+export interface KeptListQuery {
+  query?: string;
+  kind?: string;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface KeptRequest {
@@ -7976,6 +8033,19 @@ export interface MachineClients {
 }
 
 /**
+ * For each filter, how many machines have each of its values, among those every other filter lets
+ * through (so a chip says what picking it would show). A machine with no value for a filter is not
+ * counted in it.
+ */
+export interface MachineCounts {
+  state: Record<string, number>;
+  labels: Record<string, number>;
+  provider: Record<string, number>;
+  os: Record<string, number>;
+  version: Record<string, number>;
+}
+
+/**
  * machines/startEnroll (#1761): with as, a bot's machine code, an admin's only. Without, the
  * caller's own, as before.
  */
@@ -8150,6 +8220,37 @@ export interface MachineLink {
   startWhenUsed?: boolean;
   stopWhenIdleMinutes?: number;
   trust?: string;
+}
+
+/**
+ * machines/list (#5283) when it was given a query: a page of machines, the cursor of the next page
+ * (absent on the last), how many match in all, and the counts for each filter's values.
+ */
+export interface MachineList {
+  machines: ControlMachine[];
+  next?: string;
+  total: number;
+  counts: MachineCounts;
+}
+
+/**
+ * machines/list (#5283): what to show, as the Machines page asks for it. Every field is optional;
+ * with none, the answer is the plain array of up to 200 machines, as before. `query` matches a
+ * name, id or label, any case. `state`, `provider`, `os` and `version` each match one value;
+ * `labels` matches a machine that has every one. `sort` is name (the default), state, lastSeen
+ * (latest first) or version. `limit` is 1 to 200 (default 200); `cursor` is the previous answer's
+ * `next`.
+ */
+export interface MachineListQuery {
+  query?: string;
+  state?: string;
+  labels?: string[];
+  provider?: string;
+  os?: string;
+  version?: string;
+  sort?: "name" | "state" | "lastSeen" | "version";
+  limit?: number;
+  cursor?: string;
 }
 
 /** machines/setMachineOptions. stopWhenIdleMinutes 0 turns it off. */
@@ -11703,12 +11804,21 @@ export interface ReportRow {
 /** Whose rows a report adds up (#1804). */
 export interface ReportScope {
   kind: ReportScopeKind;
+  /**
+   * The project's id, for kind project (#5277): the rows whose folder is in the project, on every
+   * machine.
+   */
+  project?: string;
 }
 
-/** Me (the caller's own machines) or every person (#1804). There is no group lens (#5278). */
+/**
+ * Me (the caller's own machines), every person (#1804), or a project's folders on every machine
+ * (#5277). There is no group lens (#5278).
+ */
 export type ReportScopeKind =
   | "me"
-  | "org";
+  | "org"
+  | "project";
 
 /** A scope the caller may see, with its name (#1804). */
 export interface ReportScopeOption {
@@ -11716,7 +11826,7 @@ export interface ReportScopeOption {
   name: string;
 }
 
-/** reports/scopes' answer (#1804): Me, and the organisation for an admin. */
+/** reports/scopes' answer (#1804): Me, every project (#5277), and the organisation for an admin. */
 export interface ReportScopes {
   scopes: ReportScopeOption[];
   admin: boolean;
@@ -14280,7 +14390,7 @@ export type TranscriptEntryKind =
   | { compaction: { status: string; summary: ContentBlock[]; id?: string; error?: string } }
   | { notice: { _0: SessionNotice } }
   | { permissionAsked: { _0: PermissionRequest } }
-  | { permissionAnswered: { optionID: string; optionName?: string } }
+  | { permissionAnswered: { optionID: string; optionName?: string; answeredBy?: UUID; answeredByTitle?: string } }
   | { optionChanged: { id: string; value: JSONValue } }
   | { stateChanged: { _0: AgentState; reason?: EndedReason } }
   | { background: { _0: BackgroundItem } }
@@ -15094,6 +15204,14 @@ export type Weekday =
   | "sat";
 
 /**
+ * work/dismiss-lead (#5458): hide an epic from the suggestions until the epic changes or a lead of
+ * it ends. The list is the person's, kept on this machine.
+ */
+export interface WorkDismissLeadRequest {
+  node: LineageNode;
+}
+
+/**
  * A feature in work/features (#4586): feature is it as forge/features says it. epics are its open
  * epics, the newest first, each with where it is in its plan and its children. loose are its open
  * issues that are not epics and have no parent (of the newest 500 open issues), the newest update
@@ -15146,6 +15264,30 @@ export interface WorkFeaturesRequest {
 }
 
 /**
+ * An open epic with no lead, as work/suggest-leads says it (#5458, epic #5457). node, title and url
+ * are the epic's; folder is a folder on this machine on its repo; milestone is its name and due its
+ * due date (YYYY-MM-DD) where the forge says them. done and total are its children closed and all
+ * (0 and 0 for a standing epic, whose plan is a query). high says an open child has the label
+ * priority:high, and ui that an open child is a story (a person can see or use it: a client
+ * changes); the order says why. start is the new-agent form Start lead fills: the prompt, the
+ * labels #<n> and lead, and no worktree. It starts nothing.
+ */
+export interface WorkLeadSuggestion {
+  node: LineageNode;
+  title: string;
+  url?: string;
+  folder?: string;
+  milestone?: string;
+  due?: string;
+  done: number;
+  total: number;
+  high?: boolean;
+  ui?: boolean;
+  standing?: boolean;
+  start: ForgeStart;
+}
+
+/**
  * How a turn ended (#1916): only a question needs the person. A value this build does not know,
  * such as an old record's `blocked`, `stuck` or `partly_done`, reads as `done`.
  */
@@ -15160,6 +15302,27 @@ export interface WorkReport {
   message: string;
   at: WireDate;
   block?: Block;
+}
+
+/**
+ * work/suggest-leads (#5458): New Session's Suggested section, from the forge's open epics and this
+ * machine's sessions. suggestions are at most 3 epics with no lead (no session that is not archived
+ * has both #<epic> and lead), ranked: an epic with priority:high children first, then one with UI
+ * children, then the earliest milestone due date, then the one nearest to done. more is how many
+ * more there are, for N more in Work. An epic the person dismissed is left out until it changes or
+ * a lead has ended. errors say a forge that could not be read.
+ */
+export interface WorkSuggestLeads {
+  suggestions: WorkLeadSuggestion[];
+  more: number;
+  errors?: ForgeListError[];
+}
+
+/**
+ * work/suggest-leads (#5458): the epics of every folder on this machine, or of one folder's repo.
+ */
+export interface WorkSuggestLeadsRequest {
+  folder?: string;
 }
 
 /**
@@ -15807,6 +15970,7 @@ export interface Methods {
   "dailySummary/setSettings": { params: DailySummarySettings; result: DailySummarySettings };
   "dailySummary/settings": { params: Empty; result: DailySummarySettings };
   "deploys/delivery": { params: DeploysDeliveryRequest; result: DeploysDelivery };
+  "deploys/deliveryAll": { params: DeploysDeliveryRequest; result: DeploysDelivery };
   "deploys/targets": { params: DeployTargetsRequest; result: DeployTargets };
   "desktopControl/resume": { params: AgentRequest; result: Empty };
   "desktopControl/set": { params: DesktopControlSettings; result: DesktopControlSettings };
@@ -15918,8 +16082,8 @@ export interface Methods {
   "machines/lastHeard": { params: MachineRequest; result: MachineLastHeard };
   "machines/lendGit": { params: LendGit; result: Empty };
   "machines/link": { params: MachineLink; result: ControlMachine };
-  "machines/list": { params: Empty; result: ControlMachine[] };
-  "machines/listKept": { params: Empty; result: KeptList };
+  "machines/list": { params: MachineListQuery; result: ControlMachine[] | MachineList };
+  "machines/listKept": { params: KeptListQuery; result: KeptList };
   "machines/remove": { params: MachineRequest; result: Empty };
   "machines/retryKept": { params: KeptRequestID; result: Empty };
   "machines/setMachineOptions": { params: MachineOptions; result: ControlMachine };
@@ -16259,6 +16423,7 @@ export const MethodTarget = {
   "dailySummary/setSettings": "host",
   "dailySummary/settings": "host",
   "deploys/delivery": "host",
+  "deploys/deliveryAll": "control",
   "deploys/targets": "host",
   "desktopControl/resume": "host",
   "desktopControl/set": "host",
@@ -16932,6 +17097,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   DeployCheck: { required: ["kind", "system", "when", "state", "rawState"], optional: ["id", "name", "url"] },
   DeployCheckEvent: { required: ["check", "target", "component", "environment", "tier"], optional: ["deploy"] },
   DeployComponent: { required: ["system", "id"], optional: ["kind", "name", "repo"] },
+  DeployDeliveryEnvironment: { required: ["name", "ref", "tier"], optional: [] },
+  DeployDeliveryFact: { required: ["ref", "component", "state", "at", "environments"], optional: ["rollback", "merges", "health"] },
   DeployDeliveryTarget: { required: ["component", "environment", "environmentRef", "tier", "ended", "failed", "rollbacks", "deploymentFrequency", "leadTime", "changeFailureRate", "recoveryTime"], optional: [] },
   DeployEnvironment: { required: ["system", "name", "tier"], optional: ["ephemeral", "url"] },
   DeployEvent: { required: ["deploy", "component", "environment", "tier"], optional: ["outcome"] },
@@ -16942,7 +17109,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   DeployTargetsRequest: { required: [], optional: [] },
   DeployVersion: { required: ["artifacts"], optional: ["name", "system", "id", "ref"] },
   DeploysDelivery: { required: ["since", "at", "windowDays", "deploys", "targets"], optional: ["resolving"] },
-  DeploysDeliveryRequest: { required: ["range"], optional: ["tier"] },
+  DeploysDeliveryRequest: { required: ["range"], optional: ["tier", "scope"] },
+  DeploysSync: { required: ["deploys"], optional: ["resolving"] },
   DesktopControlLiveFrame: { required: ["agentID", "capturedAt"], optional: ["image", "locked", "narration"] },
   DesktopControlPause: { required: ["app", "pausedAt"], optional: [] },
   DesktopControlSettings: { required: ["enabled"], optional: ["mode"] },
@@ -17128,7 +17296,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   JoinedFolder: { required: ["folder", "name", "project"], optional: [] },
   KeepRequest: { required: ["host", "method", "params"], optional: ["signed"] },
   KeptDelivered: { required: ["host", "id"], optional: ["agentID"] },
-  KeptList: { required: ["kept"], optional: [] },
+  KeptList: { required: ["kept"], optional: ["next", "counts"] },
+  KeptListQuery: { required: [], optional: ["query", "kind", "limit", "cursor"] },
   KeptRequest: { required: ["id", "host", "kind", "text", "at"], optional: ["agentID", "folder", "runtimeID", "failed"] },
   KeptRequestID: { required: ["host", "id"], optional: [] },
   LabelVocabularyRequest: { required: ["folder"], optional: [] },
@@ -17268,6 +17437,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   MachineCatalog: { required: ["items"], optional: [] },
   MachineClient: { required: ["id", "kind", "publicKey"], optional: ["person"] },
   MachineClients: { required: ["clients"], optional: ["user"] },
+  MachineCounts: { required: ["state", "labels", "provider", "os", "version"], optional: [] },
   MachineEnroll: { required: [], optional: ["as"] },
   MachineFolderSend: { required: ["host"], optional: ["state", "upload", "receive", "facts", "pack", "read", "moveIn"] },
   MachineFolderSent: { required: [], optional: ["state", "folder", "facts", "pack", "read"] },
@@ -17281,6 +17451,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   MachineJoinTicket: { required: ["request", "code", "expires"], optional: [] },
   MachineLastHeard: { required: ["host"], optional: ["folders", "agents", "heardAt"] },
   MachineLink: { required: ["host", "provider", "workspace"], optional: ["startWhenUsed", "stopWhenIdleMinutes", "trust"] },
+  MachineList: { required: ["machines", "total", "counts"], optional: ["next"] },
+  MachineListQuery: { required: [], optional: ["query", "state", "labels", "provider", "os", "version", "sort", "limit", "cursor"] },
   MachineOptions: { required: ["host"], optional: ["startWhenUsed", "stopWhenIdleMinutes", "startForSchedules"] },
   MachinePolicy: { required: [], optional: ["policy", "signature", "none"] },
   MachineProjects: { required: ["projects"], optional: [] },
@@ -17571,7 +17743,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   ReportPolicy: { required: ["budgetsUSD"], optional: [] },
   ReportQuery: { required: ["range"], optional: ["format", "scope"] },
   ReportRow: { required: ["at", "person", "personName", "host", "hostName", "runtime", "cost", "inputTokens", "outputTokens", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "turns", "unpricedTurns", "workingSeconds", "waitingSeconds", "folder"], optional: ["workflow", "counts", "project", "projectName"] },
-  ReportScope: { required: ["kind"], optional: [] },
+  ReportScope: { required: ["kind"], optional: ["project"] },
   ReportScopeOption: { required: ["scope", "name"], optional: [] },
   ReportScopes: { required: ["scopes", "admin"], optional: [] },
   ReportValue: { required: ["range", "scope", "total", "waste", "unlinked", "perMergedPR", "prsMerged", "prsClosed", "prsReverted", "failedChecks", "issues", "releases"], optional: ["loaded", "overhead", "leadTimeSeconds", "cycleTimeSeconds", "estimateError", "forecastScore", "openEpics", "delivery", "limited"] },
@@ -17871,11 +18043,15 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   WebPushSubscription: { required: [], optional: ["endpoint", "p256dh", "auth"] },
   WebRemoteStatus: { required: ["port", "served"], optional: ["reason", "detail"] },
   WebServe: { required: ["on"], optional: [] },
+  WorkDismissLeadRequest: { required: ["node"], optional: [] },
   WorkFeature: { required: ["feature", "epics", "loose"], optional: [] },
   WorkFeatureEpic: { required: ["item", "steps"], optional: ["step", "blockedOutside", "forecast", "children"] },
   WorkFeatures: { required: ["features"], optional: ["approvals", "errors"] },
   WorkFeaturesRequest: { required: [], optional: ["folder", "board"] },
+  WorkLeadSuggestion: { required: ["node", "title", "done", "total", "start"], optional: ["url", "folder", "milestone", "due", "high", "ui", "standing"] },
   WorkReport: { required: ["outcome", "message", "at"], optional: ["block"] },
+  WorkSuggestLeads: { required: ["suggestions", "more"], optional: ["errors"] },
+  WorkSuggestLeadsRequest: { required: [], optional: ["folder"] },
   WorkTimeline: { required: ["epics", "releases"], optional: ["timeZone", "backtest", "errors"] },
   WorkTimelineBacktest: { required: ["error", "width", "cuts", "holds", "epics", "at"], optional: [] },
   WorkTimelineChild: { required: ["item", "createdAt"], optional: ["stateReason", "startedAt", "closedAt", "waitsForPerson", "forecastAt"] },

@@ -1117,6 +1117,74 @@
       ],
       "additionalProperties": false
     },
+    "DeployDeliveryEnvironment": {
+      "type": "object",
+      "description": "One environment a deploy is part-of, in a DeployDeliveryFact (#5496): its name, its lineage ref and its tier.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "core.schema.json#/definitions/EnvironmentTier"
+        }
+      },
+      "required": [
+        "name",
+        "ref",
+        "tier"
+      ],
+      "additionalProperties": false
+    },
+    "DeployDeliveryFact": {
+      "type": "object",
+      "description": "One deploy a machine keeps (lineage-deploys.json, #5241), as deploys/delivery's figures need it (#5496): its lineage ref, its component (owner/name), its state, when it ended (its finish, else its start), whether a succeeded one is a rollback, the merge times of the PRs it brings (when the forge said them), the times health signals were seen in it, and its environments. Only refs, names, states and times (principle 7).",
+      "properties": {
+        "ref": {
+          "type": "string"
+        },
+        "component": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "core.schema.json#/definitions/DeployState"
+        },
+        "at": {
+          "$ref": "core.schema.json#/definitions/WireDate"
+        },
+        "rollback": {
+          "type": "boolean"
+        },
+        "merges": {
+          "type": "array",
+          "items": {
+            "$ref": "core.schema.json#/definitions/WireDate"
+          }
+        },
+        "health": {
+          "type": "array",
+          "items": {
+            "$ref": "core.schema.json#/definitions/WireDate"
+          }
+        },
+        "environments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeployDeliveryEnvironment"
+          }
+        }
+      },
+      "required": [
+        "ref",
+        "component",
+        "state",
+        "at",
+        "environments"
+      ],
+      "additionalProperties": false
+    },
     "DeployDeliveryTarget": {
       "type": "object",
       "description": "One target's DORA figures in deploys/delivery (#5245, spec 5239-deploy-model): a component (the repo, by default) in one environment, from the deploys this machine keeps. ended is the deploys that succeeded or failed in the range (a cancelled one is neither), failed those that failed, rollbacks the succeeded ones that put an older release back. deploymentFrequency is the succeeded deploys a week; leadTime is a PR's merge to the first succeeded deploy that brings it, the median and p90; changeFailureRate is the failed deploys and rollbacks over the ended ones, 0 to 1; recoveryTime is a failed deploy's end, or a health signal seen in a deploy, to the next succeeded deploy, the median. Each has a series of its weeks and DORA 2024's band, as Planning's Delivery row has them.",
@@ -1175,7 +1243,7 @@
     },
     "DeploysDelivery": {
       "type": "object",
-      "description": "deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most.",
+      "description": "deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most. From deploys/deliveryAll (#5496), deploys is how many deploys the copies of the machines in the scope keep, each once.",
       "properties": {
         "since": {
           "$ref": "core.schema.json#/definitions/WireDate"
@@ -1210,17 +1278,39 @@
     },
     "DeploysDeliveryRequest": {
       "type": "object",
-      "description": "deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said.",
+      "description": "deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said. scope is for deploys/deliveryAll (#5496): whose machines' copies the control plane reads, as reports/value's; a machine leaves it out.",
       "properties": {
         "range": {
           "$ref": "#/definitions/ReportRange"
         },
         "tier": {
           "$ref": "core.schema.json#/definitions/EnvironmentTier"
+        },
+        "scope": {
+          "$ref": "#/definitions/ReportScope"
         }
       },
       "required": [
         "range"
+      ],
+      "additionalProperties": false
+    },
+    "DeploysSync": {
+      "type": "object",
+      "description": "deploys/sync (#5496): every deploy a machine keeps, at most 1,000, in place of the control plane's copy of that machine's deploys. resolving is true while what some deploys bring is still being asked of the forge.",
+      "properties": {
+        "deploys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeployDeliveryFact"
+          }
+        },
+        "resolving": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "deploys"
       ],
       "additionalProperties": false
     },
@@ -2444,6 +2534,10 @@
       "properties": {
         "kind": {
           "$ref": "#/definitions/ReportScopeKind"
+        },
+        "project": {
+          "type": "string",
+          "description": "The project's id, for kind project (#5277): the rows whose folder is in the project, on every machine."
         }
       },
       "required": [
@@ -2455,9 +2549,10 @@
       "type": "string",
       "enum": [
         "me",
-        "org"
+        "org",
+        "project"
       ],
-      "description": "Me (the caller's own machines) or every person (#1804). There is no group lens (#5278)."
+      "description": "Me (the caller's own machines), every person (#1804), or a project's folders on every machine (#5277). There is no group lens (#5278)."
     },
     "ReportScopeOption": {
       "type": "object",
@@ -2478,7 +2573,7 @@
     },
     "ReportScopes": {
       "type": "object",
-      "description": "reports/scopes' answer (#1804): Me, and the organisation for an admin.",
+      "description": "reports/scopes' answer (#1804): Me, every project (#5277), and the organisation for an admin.",
       "properties": {
         "scopes": {
           "type": "array",
@@ -3375,6 +3470,15 @@
       ],
       "additionalProperties": false
     },
+    "WorkDismissLeadRequest": {
+      "type": "object",
+      "description": "work/dismiss-lead (#5458): hide an epic from the suggestions until the epic changes or a lead of it ends. The list is the person's, kept on this machine.",
+      "properties": {
+        "node": { "$ref": "lineage.schema.json#/definitions/LineageNode" }
+      },
+      "required": ["node"],
+      "additionalProperties": false
+    },
     "WorkFeature": {
       "type": "object",
       "description": "A feature in work/features (#4586): feature is it as forge/features says it. epics are its open epics, the newest first, each with where it is in its plan and its children. loose are its open issues that are not epics and have no parent (of the newest 500 open issues), the newest update first, as children are: when each started, and whether it waits for a person.",
@@ -3479,6 +3583,26 @@
       },
       "additionalProperties": false
     },
+    "WorkLeadSuggestion": {
+      "type": "object",
+      "description": "An open epic with no lead, as work/suggest-leads says it (#5458, epic #5457). node, title and url are the epic's; folder is a folder on this machine on its repo; milestone is its name and due its due date (YYYY-MM-DD) where the forge says them. done and total are its children closed and all (0 and 0 for a standing epic, whose plan is a query). high says an open child has the label priority:high, and ui that an open child is a story (a person can see or use it: a client changes); the order says why. start is the new-agent form Start lead fills: the prompt, the labels #<n> and lead, and no worktree. It starts nothing.",
+      "properties": {
+        "node": { "$ref": "lineage.schema.json#/definitions/LineageNode" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "folder": { "type": "string" },
+        "milestone": { "type": "string" },
+        "due": { "type": "string" },
+        "done": { "type": "integer" },
+        "total": { "type": "integer" },
+        "high": { "type": "boolean" },
+        "ui": { "type": "boolean" },
+        "standing": { "type": "boolean" },
+        "start": { "$ref": "forge.schema.json#/definitions/ForgeStart" }
+      },
+      "required": ["node", "title", "done", "total", "start"],
+      "additionalProperties": false
+    },
     "WorkOutcome": {
       "type": "string",
       "enum": [
@@ -3511,6 +3635,25 @@
         "message",
         "at"
       ],
+      "additionalProperties": false
+    },
+    "WorkSuggestLeads": {
+      "type": "object",
+      "description": "work/suggest-leads (#5458): New Session's Suggested section, from the forge's open epics and this machine's sessions. suggestions are at most 3 epics with no lead (no session that is not archived has both #<epic> and lead), ranked: an epic with priority:high children first, then one with UI children, then the earliest milestone due date, then the one nearest to done. more is how many more there are, for N more in Work. An epic the person dismissed is left out until it changes or a lead has ended. errors say a forge that could not be read.",
+      "properties": {
+        "suggestions": { "type": "array", "items": { "$ref": "#/definitions/WorkLeadSuggestion" } },
+        "more": { "type": "integer" },
+        "errors": { "type": "array", "items": { "$ref": "forge.schema.json#/definitions/ForgeListError" } }
+      },
+      "required": ["suggestions", "more"],
+      "additionalProperties": false
+    },
+    "WorkSuggestLeadsRequest": {
+      "type": "object",
+      "description": "work/suggest-leads (#5458): the epics of every folder on this machine, or of one folder's repo.",
+      "properties": {
+        "folder": { "type": "string" }
+      },
       "additionalProperties": false
     },
     "WorkTimeline": {

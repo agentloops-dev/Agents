@@ -50,3 +50,17 @@ func TestDeployFiguresOf(t *testing.T) {
 		t.Errorf("no deploys: %+v", none)
 	}
 }
+
+// #5496: two machines' copies of one deploy count once, and the one that says more wins.
+func TestDeployFactsOnce(t *testing.T) {
+	ref := "github:deploy:alexec/agents#1"
+	running := wire.DeployDeliveryFact{Ref: ref, State: wire.DeployStateRunning, At: 10}
+	ended := wire.DeployDeliveryFact{Ref: ref, State: wire.DeployStateSucceeded, At: 20}
+	brings := ended
+	brings.Merges = []wire.Date{5}
+	other := wire.DeployDeliveryFact{Ref: "github:deploy:alexec/agents#2", State: wire.DeployStateFailed, At: 30}
+	got := DeployFactsOnce([]wire.DeployDeliveryFact{running, other, ended, brings, ended})
+	if len(got) != 2 || got[0].State != wire.DeployStateSucceeded || len(got[0].Merges) != 1 || got[1].Ref != other.Ref {
+		t.Fatalf("once: %+v", got)
+	}
+}

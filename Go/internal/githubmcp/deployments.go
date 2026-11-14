@@ -233,7 +233,7 @@ func (d Deployment) deploy(repo string, c deployChange) wire.Deploy {
 			break
 		}
 	}
-	if at, ok := mcpevents.ParseTime(c.Status.At); ok && c.State != wire.DeployStateRunning {
+	if at, ok := mcpevents.ParseTime(c.Status.At); ok && c.State != wire.DeployStateRunning && c.State != wire.DeployStateWaiting {
 		out.Finished = new(wire.DateOf(at))
 	}
 	return out
@@ -252,6 +252,61 @@ func deployData(repo string, d Deployment, c deployChange, outcome wire.DeployOu
 	}
 	var out map[string]any
 	return out, json.Unmarshal(b, &out)
+}
+
+// runURL is an Actions run's url, or one of its jobs': …/actions/runs/<run>.
+var runURL = regexp.MustCompile(`/actions/runs/([0-9]+)(/|$)`)
+
+// waitingDeployment is the Deployment that waits for run's reviewers in environment (#5407): of
+// the run's sha, its newest status waiting, and its status's url the run's when it names one. ok
+// is false when GitHub has none.
+func waitingDeployment(deps []Deployment, run RunRef, environment string) (Deployment, deployChange, bool) {
+	var best Deployment
+	var change deployChange
+	found := false
+	for _, d := range deps {
+		if d.Environment != environment || d.SHA != run.HeadSHA || len(d.Statuses) == 0 {
+			continue
+		}
+		s := d.Statuses[len(d.Statuses)-1]
+		if s.State != "waiting" {
+			continue
+		}
+		if m := runURL.FindStringSubmatch(s.URL); m != nil && m[1] != fmt.Sprint(run.ID) {
+			continue
+		}
+		if !found || d.ID > best.ID {
+			best, change, found = d, deployChange{Event: "deploy.waiting", State: wire.DeployStateWaiting, Status: s}, true
+		}
+	}
+	return best, change, found
+}
+
+// waitingData is deploy.waiting's details: its own fields, and the wire's DeployEvent of the
+// Deployment that waits (#5407), the first of its environments that has one, so a deploy that
+// waits for an approval is its target's next version.
+func waitingData(ctx context.Context, gh GitHub, repo string, w WaitingDeploy) (map[string]any, error) {
+	data := w.data()
+	since := mcpevents.Normalized(w.Run.Run.CreatedAt)
+	for _, e := range w.Environments {
+		deps, err := gh.Deployments(ctx, repo, e.Name, since)
+		if err != nil {
+			return nil, err
+		}
+		d, c, ok := waitingDeployment(deps, w.Run.Run, e.Name)
+		if !ok {
+			continue
+		}
+		event, err := deployData(repo, d, c, "")
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range event {
+			data[k] = v
+		}
+		break
+	}
+	return data, nil
 }
 
 // deployCandidates are deploy.started's, deploy.succeeded's or deploy.failed's candidates at or

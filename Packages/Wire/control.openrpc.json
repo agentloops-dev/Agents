@@ -331,7 +331,7 @@
     },
     {
       "name": "builds/historyAll",
-      "x-capability": "builds.read/1",
+      "x-capability": "builds.read/2",
       "description": "builds/history over the control plane's copy (#5232): the runs of every machine in the scope that sends the repository's build timings, one for each ci-run ref and attempt, so a machine that sleeps is still in it.",
       "tags": [
         {
@@ -357,7 +357,7 @@
     },
     {
       "name": "builds/runAll",
-      "x-capability": "builds.read/1",
+      "x-capability": "builds.read/2",
       "description": "builds/run over the control plane's copy (#5232), as builds/historyAll reads it.",
       "tags": [
         {
@@ -1984,6 +1984,53 @@
       ]
     },
     {
+      "name": "deploys/deliveryAll",
+      "x-capability": "deploys.read/1",
+      "description": "deploys/delivery over the control plane's copy (#5496): the deploys of every machine in the scope that sends them, each once, so Delivery works for a group or org and while a machine sleeps.",
+      "tags": [
+        {
+          "name": "web"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/reports.schema.json#/definitions/DeploysDeliveryRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/reports.schema.json#/definitions/DeploysDelivery"
+        }
+      }
+    },
+    {
+      "name": "deploys/sync",
+      "x-capability": "deploys.copy/1",
+      "description": "A host, on its channel 0 (#5496): every deploy it keeps, as deploys/delivery's figures need them, a few seconds after a change and when it connects, in place of the control plane's copy of its deploys. The copy keeps the machine store's bound.",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/reports.schema.json#/definitions/DeploysSync"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/core.schema.json#/definitions/Empty"
+        }
+      }
+    },
+    {
       "name": "folders/detect",
       "x-capability": "folders/1",
       "description": "To a host just added, from a control plane before #656.",
@@ -2342,7 +2389,7 @@
     },
     {
       "name": "lineage/sessionsOn",
-      "x-capability": "lineage.read/1",
+      "x-capability": "lineage.read/2",
       "description": "The sessions on every machine in a scope that lineage links to these nodes (#4276), with when each started on them and its state now, from the merged copy: a machine that sleeps is still in it.",
       "tags": [
         {
@@ -2389,7 +2436,7 @@
     },
     {
       "name": "lineage/walkAll",
-      "x-capability": "lineage.read/1",
+      "x-capability": "lineage.read/2",
       "description": "lineage/walk over the merged copy of every machine's lineage in a scope (#4276), with each session's state now.",
       "tags": [
         {
@@ -3773,7 +3820,7 @@
     },
     {
       "name": "machines/list",
-      "x-capability": "machines/1",
+      "x-capability": "machines/2",
       "tags": [
         {
           "name": "web"
@@ -3783,25 +3830,32 @@
       "params": [
         {
           "name": "params",
-          "required": true,
+          "required": false,
           "schema": {
-            "$ref": "schema/core.schema.json#/definitions/Empty"
+            "$ref": "schema/org.schema.json#/definitions/MachineListQuery"
           }
         }
       ],
       "result": {
         "name": "result",
         "schema": {
-          "type": "array",
-          "items": {
-            "$ref": "schema/org.schema.json#/definitions/ControlMachine"
-          }
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "schema/org.schema.json#/definitions/ControlMachine"
+              }
+            },
+            {
+              "$ref": "schema/org.schema.json#/definitions/MachineList"
+            }
+          ]
         }
       }
     },
     {
       "name": "machines/listKept",
-      "x-capability": "machines/1",
+      "x-capability": "machines/2",
       "tags": [
         {
           "name": "web"
@@ -3811,9 +3865,9 @@
       "params": [
         {
           "name": "params",
-          "required": true,
+          "required": false,
           "schema": {
-            "$ref": "schema/core.schema.json#/definitions/Empty"
+            "$ref": "schema/workflows.schema.json#/definitions/KeptListQuery"
           }
         }
       ],
@@ -5538,7 +5592,7 @@
     },
     {
       "name": "reports/export",
-      "x-capability": "reports/1",
+      "x-capability": "reports/2",
       "tags": [
         {
           "name": "web"
@@ -5563,7 +5617,7 @@
     },
     {
       "name": "reports/nodes",
-      "x-capability": "reports.nodes/1",
+      "x-capability": "reports.nodes/2",
       "description": "The lineage nodes of one kind in a scope (#3118): issues, PRs or releases, with their cost, sessions and lead time, filtered, sorted and in pages of at most 100, from the machines' lineage nodes as reports/value reads them.",
       "tags": [
         {
@@ -5615,7 +5669,7 @@
     },
     {
       "name": "reports/saveView",
-      "x-capability": "reports.views/1",
+      "x-capability": "reports.views/2",
       "description": "Keeps a view of Reports for the caller (#2019): a new one with no id, or changes the one with its id. At most 50; a scope the caller may see.",
       "tags": [
         {
@@ -5693,7 +5747,7 @@
     },
     {
       "name": "reports/usage",
-      "x-capability": "reports/1",
+      "x-capability": "reports/2",
       "tags": [
         {
           "name": "web"
@@ -5718,7 +5772,7 @@
     },
     {
       "name": "reports/value",
-      "x-capability": "reports.value/1",
+      "x-capability": "reports.value/2",
       "description": "What the work in a scope cost and delivered (#2351): cost per merged PR, per issue and per release, waste and lead time, from the machines' lineage nodes.",
       "tags": [
         {

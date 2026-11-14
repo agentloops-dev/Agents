@@ -93,7 +93,8 @@ an event already on the log.
 | --- | --- | --- | --- |
 | `agent.started` | — | agent | An agent started working. |
 | `agent.finished` | — | agent, outcome, afterwards | An agent ended a turn having done its work. `afterwards` is `archive_requested` when the turn ends waiting for you to approve archiving it, `archived` when the session is archived as the turn ends, else `stay`. `outcome` is `done`, `nothing_to_do`, `needs_answer` or `waiting` (#1916 removed `partly_done` and `stuck`). |
-| `agent.asked_permission` | — | agent | An agent is asking for permission. |
+| `agent.asked_permission` | — | agent, request, tool | An agent is asking for permission. `request` is the card's id and `tool` the tool call's title: the session that started it can answer it with `answer_permission` (#5440). |
+| `agent.permission_answered` | — | agent, by, by_title, answer, request, tool | The session that started an agent (`by`, titled `by_title`) answered that agent's permission card with `answer_permission` (#5440). `answer` is `allow` (once) or `deny`. |
 | `agent.asked_form` | — | agent | An agent raised a form to fill in. |
 | `agent.waiting` | — | agent, waiting_on | An agent ended its turn waiting on something. When `waiting_on` names agents, the agent resumes by itself when they end or its wait's time limit comes. See [Statuses and groups](statuses.md). |
 | `agent.stopped` | — | agent, by | An agent was stopped before finishing. `by` is `you`, `admin` (an admin in the Console, #2435), `cost_limit` or `unknown`. |

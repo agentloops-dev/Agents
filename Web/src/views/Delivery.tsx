@@ -1,9 +1,11 @@
 // Reports ▸ Planning ▸ Delivery (#5245, spec 5239-deploy-model, board 5): the four DORA figures for each target, a
-// component in one environment, on one tier. The figures are deploys/delivery, asked of each of the person's machines
-// that keeps deploys; the one that keeps the most answers, as Builds does. The words are model/deploys.ts.
+// component in one environment, on one tier. The figures are the control plane's deploys/deliveryAll, over the copy
+// of the deploys the person's machines send (#5496), so the page has data while a machine sleeps; with an older
+// control plane, deploys/delivery, asked of each of the person's machines that keeps deploys, and the one that keeps
+// the most answers, as Builds does. The words are model/deploys.ts.
 import { useEffect, useRef } from "preact/hooks";
 import { useSignal } from "@preact/signals";
-import type { DeploysDelivery, MachineRef } from "../protocol/generated";
+import type { DeploysDelivery, MachineRef, ReportScope } from "../protocol/generated";
 import { Capability } from "../protocol/capabilities.generated";
 import type { Store } from "../model/store";
 import { hostAnswers } from "../model/capabilities";
@@ -19,13 +21,16 @@ import { LastUpdate } from "./LastUpdate";
 
 const at = (a: DeploysAsk) => ({ nav: "reports" as const, section: "value", item: "delivery", query: deploysQuery(a) });
 
-function failed(error: unknown): string {
+function failed(error: unknown, plane: boolean): string {
   if (error instanceof CallFailed) return error.code === -32601 ? "This machine does not count deploys. Update it to see them." : error.message;
-  return "The machine can’t be reached.";
+  return plane ? "The control plane can’t be reached." : "The machine can’t be reached.";
 }
 
 /** What the page read: the answer in the tier, how many targets every tier has, and when. */
-interface Read { host: MachineRef; delivery: DeploysDelivery; everyTier: number; readAt: number; key: string }
+interface Read { delivery: DeploysDelivery; everyTier: number; readAt: number; key: string }
+
+/** The person's own machines, as Builds' read of the control plane's copy. */
+const mine: ReportScope = { kind: "me" };
 
 export function DeliveryPage({ store, down }: { store: Store; down: boolean }) {
   const ask = parseDeploysQuery(route.value.query);
@@ -33,29 +38,34 @@ export function DeliveryPage({ store, down }: { store: Store; down: boolean }) {
   const mac = store.macHostID.value;
   // This Mac first, so a tie goes to it.
   hosts.sort((a, b) => Number(b === mac) - Number(a === mac));
+  // The control plane's copy when it keeps one, else each machine.
+  const plane = store.planeHas(Capability.deploysRead1);
   const read = useSignal<Read | null>(null);
   const problem = useSignal<string | null>(null);
-  const hostKey = hosts.join(" ");
+  const hostKey = plane ? "plane" : hosts.join(" ");
   const wanted = JSON.stringify([ask.range, ask.tier, hostKey]);
   const current = useRef(wanted);
   current.current = wanted;
 
   useEffect(() => {
-    if (down || hosts.length === 0) return;
+    if (down || !plane && hosts.length === 0) return;
     problem.value = null;
     let again: ReturnType<typeof setTimeout> | undefined;
     const load = () => {
       const asked = { range: ask.range };
-      void Promise.all(hosts.map((host) => store.link.call("deploys/delivery", asked, host).then((delivery) => ({ host, delivery }), (e: unknown) => e)))
+      const asks: Promise<{ delivery: DeploysDelivery } | unknown>[] = plane
+        ? [store.link.call("deploys/deliveryAll", { ...asked, scope: mine }).then((delivery) => ({ delivery }), (e: unknown) => e)]
+        : hosts.map((host: MachineRef) => store.link.call("deploys/delivery", asked, host).then((delivery) => ({ delivery }), (e: unknown) => e));
+      void Promise.all(asks)
         .then((got) => {
           if (current.current !== wanted) return;
-          const answers = got.filter((g): g is { host: MachineRef; delivery: DeploysDelivery } => typeof g === "object" && g !== null && "delivery" in g);
+          const answers = got.filter((g): g is { delivery: DeploysDelivery } => typeof g === "object" && g !== null && "delivery" in g);
           const best = answers.sort((a, b) => b.delivery.deploys - a.delivery.deploys)[0];
-          if (!best) { problem.value = failed(got[0]); return; }
+          if (!best) { problem.value = failed(got[0], plane); return; }
           // Every tier is asked, and the tier picked is taken from it, so the empty words can say what other tiers have.
           const all = best.delivery;
           const targets = ask.tier ? all.targets.filter((t) => t.tier === ask.tier) : all.targets;
-          read.value = { host: best.host, delivery: { ...all, targets }, everyTier: all.targets.length, readAt: Date.now(), key: wanted };
+          read.value = { delivery: { ...all, targets }, everyTier: all.targets.length, readAt: Date.now(), key: wanted };
           // What some deploys brought is still being asked: read again once it has had time.
           if (all.resolving) again = setTimeout(load, 5_000);
         });
@@ -65,7 +75,7 @@ export function DeliveryPage({ store, down }: { store: Store; down: boolean }) {
   }, [wanted, down]);
 
   if (down) return <p class="hint">The control plane can’t be reached.</p>;
-  if (hosts.length === 0) return <p class="hint">{noDeployMachine}</p>;
+  if (!plane && hosts.length === 0) return <p class="hint">{noDeployMachine}</p>;
   const shown = read.value?.key === wanted ? read.value : null;
   const d = shown?.delivery;
   const days = d ? Number(d.windowDays) : 0;
@@ -80,7 +90,8 @@ export function DeliveryPage({ store, down }: { store: Store; down: boolean }) {
       <p class="quiet small">{askLine(rangeSpan[ask.range], ask)}</p>
       {problem.value && <p class="hint">{problem.value}</p>}
       {!d && !problem.value && <p class="hint">Loading…</p>}
-      {d && d.targets.length === 0 && <p class="hint">{noTargetsWords(ask, rangeSpan[ask.range], shown.everyTier)}</p>}
+      {d && d.deploys === 0 && <p class="hint">{noDeployMachine}</p>}
+      {d && d.deploys > 0 && d.targets.length === 0 && <p class="hint">{noTargetsWords(ask, rangeSpan[ask.range], shown.everyTier)}</p>}
       {d?.targets.map((t) => {
         const few = t.ended < fewDeploys;
         return (

@@ -223,8 +223,21 @@ The deploy events make the lineage nodes (#5241). The code is
 
 Reports ▸ Planning ▸ Delivery on the web page (#5245) shows the four DORA figures for each
 target: a component (its repo) in one environment. A host answers `deploys/delivery` from
-the deploys it keeps (`Go/internal/agentsd/deploydelivery.go`), and the page takes the
-answer of the machine that keeps the most deploys, as the Builds page does.
+the deploys it keeps (`Go/internal/agentsd/deploydelivery.go`).
+
+- **The control plane's copy (#5496):** each host sends every deploy it keeps
+  (`deploys/sync`, `Go/internal/agentsd/deploysync.go`), as the figures need it: its ref,
+  component, state, end, rollback, the merge times of what it brings, the health signals
+  seen in it and its environments. It goes whole, a few seconds after a deploy event or
+  after what a deploy brings is known, hourly, and on each new link. The control plane keeps
+  it per machine in `v1/deploys/<machine>.json`, in place of the last send
+  (`Go/internal/controlplane/deploys.go`), and answers `deploys/deliveryAll` over the
+  machines in a scope, each deploy once, with the same code as the host
+  (`lineage.DeploysDeliveryOf`). So the page works for a group or org and while a machine
+  sleeps. With an older control plane, the page asks each machine and takes the one that
+  keeps the most deploys.
+- **A host works out what its deploys of the last 90 days bring** for the copy, 20 at a
+  time, so the copy has lead time with no page open on that machine.
 
 | Figure | How it is counted |
 |---|---|

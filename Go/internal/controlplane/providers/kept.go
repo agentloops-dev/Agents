@@ -1,10 +1,13 @@
 package providers
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -322,7 +325,7 @@ func (k *Kept) Answer(method string, params json.RawMessage, person string) (any
 	k.Load()
 	switch method {
 	case MethodHostsListKept:
-		return KeptList{Kept: k.For(person)}, nil
+		return listKept(k.For(person), params)
 	case MethodHostsDropKept:
 		which, err := requireKeptID(params)
 		if err != nil {
@@ -550,4 +553,56 @@ func requireKeptID(params json.RawMessage) (KeptRequestID, error) {
 	}
 	which.ID = wire.UUID(strings.ToUpper(string(which.ID)))
 	return which, nil
+}
+
+// keptCap is the most kept requests one machines/listKept answer holds (#5283).
+const keptCap = 200
+
+// listKept answers machines/listKept (#5283): the caller's kept requests, filtered by `query`
+// (text, kind or machine) and `kind`, in the order kept, a page at a time, with how many of
+// each kind match the query. With no params it is every one, up to the cap.
+func listKept(all []KeptRequest, params json.RawMessage) (KeptList, error) {
+	var q wire.KeptListQuery
+	if p := bytes.TrimSpace(params); len(p) > 0 && string(p) != "null" {
+		if err := json.Unmarshal(p, &q); err != nil {
+			return KeptList{}, invalid("machines/listKept: %v", err)
+		}
+	}
+	offset := 0
+	if q.Cursor != nil && *q.Cursor != "" {
+		raw, err := base64.RawURLEncoding.DecodeString(*q.Cursor)
+		n, convErr := strconv.Atoi(string(raw))
+		if err != nil || convErr != nil || n < 0 {
+			return KeptList{}, invalid("That page cursor is not one this control plane gave.")
+		}
+		offset = n
+	}
+	limit := keptCap
+	if q.Limit != nil && *q.Limit >= 1 && *q.Limit < keptCap {
+		limit = int(*q.Limit)
+	}
+	text := ""
+	if q.Query != nil {
+		text = strings.ToLower(strings.TrimSpace(*q.Query))
+	}
+	counts := map[string]int64{}
+	shown := []KeptRequest{}
+	for _, r := range all {
+		if text != "" && !strings.Contains(strings.ToLower(r.Text+" "+r.Kind+" "+string(r.Host)), text) {
+			continue
+		}
+		counts[r.Kind]++
+		if q.Kind == nil || *q.Kind == "" || r.Kind == *q.Kind {
+			shown = append(shown, r)
+		}
+	}
+	page := shown[min(offset, len(shown)):]
+	out := KeptList{Counts: &wire.KeptListCounts{Kind: counts}}
+	if len(page) > limit {
+		page = page[:limit]
+		c := base64.RawURLEncoding.EncodeToString([]byte(strconv.Itoa(offset + limit)))
+		out.Next = &c
+	}
+	out.Kept = page
+	return out, nil
 }

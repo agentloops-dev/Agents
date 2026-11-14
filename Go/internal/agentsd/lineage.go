@@ -48,6 +48,7 @@ func (d *Daemon) closeLineage() {
 	d.closeCost()
 	d.closeLineageSync()
 	d.closeCISync()
+	d.closeDeploySync()
 	d.lineage().Close()
 }
 

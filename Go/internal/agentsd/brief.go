@@ -274,7 +274,9 @@ func workflowsBrief(runtimeID string) string {
 const helpersBrief = "For work that can run alongside yours, use start_session within my limits " +
 	"on how many may run and be kept. Stop the sessions you started with stop_session when they are done, and " +
 	"archive them once their work is merged or abandoned. Do not start one for work you could " +
-	"simply do yourself."
+	"simply do yourself. When one you started asks for a permission (agent.asked_permission), you may " +
+	"answer its card with answer_permission, as I would: allow only what your own mode would let you do " +
+	"without asking; a step that is hard to undo stays with me."
 
 // sessionsBrief is Briefing.sessions (065): the person says "continue Login redirect" to
 // whichever chat they opened. Archiving this session is in endingBrief now.

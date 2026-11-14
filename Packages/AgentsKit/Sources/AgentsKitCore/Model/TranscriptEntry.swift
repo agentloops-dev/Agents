@@ -80,7 +80,9 @@ public struct TranscriptEntry: Codable, Hashable, Sendable, Identifiable {
         /// The runtime telling the person something beside the reply (ACP `notice`).
         case notice(SessionNotice)
         case permissionAsked(PermissionRequest)
-        case permissionAnswered(optionID: String, optionName: String?)
+        /// `answeredBy` and its title name the session that answered it with
+        /// `answer_permission`, the one that started this agent (#5440); nil for the person.
+        case permissionAnswered(optionID: String, optionName: String?, answeredBy: String? = nil, answeredByTitle: String? = nil)
         case optionChanged(id: String, value: JSONValue)
         case stateChanged(AgentState, reason: EndedReason?)
 
@@ -285,5 +287,16 @@ public enum CompactionLine {
         default:
             return "Summarising the conversation so far…"
         }
+    }
+}
+
+extension TranscriptEntry {
+    /// Who chose on an answered permission card (#5036, #5440): "You chose", or "‹Lead›
+    /// chose" when the session that started this one answered it with `answer_permission`.
+    /// The same words as the web page's `chooser` (Web/src/views/chat/Rows.tsx).
+    public static func chooser(answeredBy: String?, title: String?) -> String {
+        guard answeredBy != nil else { return "You chose" }
+        let name = title?.trimmingCharacters(in: .whitespaces) ?? ""
+        return (name.isEmpty ? "The session that started it" : name) + " chose"
     }
 }
