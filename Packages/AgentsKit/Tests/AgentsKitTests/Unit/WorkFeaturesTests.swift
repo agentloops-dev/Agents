@@ -130,6 +130,25 @@ struct WorkFeaturesTests {
         #expect(WorkFeatures.lead(of: linear, in: [agent(["ENG-5", "lead"], state: .finished)]) != nil)
     }
 
+    @Test func aRowsSessionIsALiveOneLabelledWithTheItemOneThatNeedsYouFirst() {
+        let issue = Node(kind: "issue", ref: "github:alexec/Agents#5453")
+        let stopped = agent(["#5453"], state: .stopped, at: 900)
+        let old = agent(["#5453"], state: .running, at: 100)
+        let newer = agent(["#5453", "lane"], state: .starting, at: 200)
+        let asks = agent(["#5453"], state: .waitingOnUser, at: 50)
+        let other = agent(["#5454"], state: .running, at: 300)
+        let pr = agent(["P#5453"], state: .running, at: 400)
+        #expect(WorkFeatures.workingSession(on: issue, in: [stopped, old, newer, other, pr])?.id == newer.id)
+        #expect(WorkFeatures.workingSession(on: issue, in: [old, asks, newer])?.id == asks.id)
+        #expect(WorkFeatures.workingSession(on: issue, in: [stopped, other, pr]) == nil)
+        #expect(WorkFeatures.workingSession(on: Node(kind: "pr", ref: "github:alexec/Agents#5453"), in: [old, pr])?.id == pr.id)
+        let linear = agent(["ENG-5"], state: .running)
+        #expect(WorkFeatures.workingSession(on: Node(kind: "issue", ref: "linear:ENG-5"), in: [linear])?.id == linear.id)
+        #expect(WorkFeatures.itemLabel(Node(kind: "pr", ref: "gitlab:a/b!7")) == "P!7")
+        #expect(WorkFeatures.workingWords(.running) == "Working")
+        #expect(WorkFeatures.workingWords(.waitingOnUser) == "Needs you")
+    }
+
     @Test func theLeadSaysItsState() {
         #expect(WorkFeatures.leadWords(nil) == "No lead")
         #expect(WorkFeatures.leadWords(.running) == "● lead working")
