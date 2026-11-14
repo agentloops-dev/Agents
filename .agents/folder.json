@@ -1,4 +1,7 @@
 {
+  "helperLimits" : {
+    "agentsMayStartOnMachines" : true
+  },
   "prCostComment" : "cost",
   "project" : "p-6xaexpfudsyp"
 }
