@@ -44,25 +44,32 @@ func lockCommand(args []string) int {
 
 // callSocket makes one call on daemon.sock and waits for its answer.
 func callSocket(path, method string, params any) error {
+	_, err := callSocketResult(path, method, params)
+	return err
+}
+
+// callSocketResult is callSocket and the call's result.
+func callSocketResult(path, method string, params any) (json.RawMessage, error) {
 	c, err := net.DialTimeout("unix", path, 5*time.Second)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer c.Close()
 	c.SetDeadline(time.Now().Add(30 * time.Second))
 	b, _ := json.Marshal(map[string]any{"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
 	if _, err := c.Write(append(b, '\n')); err != nil {
-		return err
+		return nil, err
 	}
 	r := bufio.NewReaderSize(c, 1<<20)
 	for {
 		line, err := r.ReadBytes('\n')
 		if err != nil {
-			return err
+			return nil, err
 		}
 		var reply struct {
-			ID    *json.RawMessage `json:"id"`
-			Error *struct {
+			ID     *json.RawMessage `json:"id"`
+			Result json.RawMessage  `json:"result"`
+			Error  *struct {
 				Message string `json:"message"`
 			} `json:"error"`
 		}
@@ -70,8 +77,8 @@ func callSocket(path, method string, params any) error {
 			continue // a notification
 		}
 		if reply.Error != nil {
-			return fmt.Errorf("%s", reply.Error.Message)
+			return nil, fmt.Errorf("%s", reply.Error.Message)
 		}
-		return nil
+		return reply.Result, nil
 	}
 }

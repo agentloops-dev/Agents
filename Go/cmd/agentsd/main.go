@@ -61,6 +61,10 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "secret" {
 		os.Exit(agentsd.SecretCommand(os.Args[2:], os.Getenv, secretSocket(), os.Stdout, os.Stderr))
 	}
+	// The one installer (#5356): steps 3 to 6 of a machine's set-up, on this machine.
+	if len(os.Args) > 1 && os.Args[1] == "install" {
+		os.Exit(installCommand(os.Args[2:]))
+	}
 	if len(os.Args) > 1 && os.Args[1] == "lock" {
 		os.Exit(lockCommand(os.Args[2:]))
 	}
@@ -151,6 +155,7 @@ func main() {
 	d.SayRestarted()
 	d.PickUpAfterRestart()
 	d.StartConnections()
+	d.StartSetupReports()
 	d.StartRetention()
 	d.StartBackups()
 	d.StartProjects()
