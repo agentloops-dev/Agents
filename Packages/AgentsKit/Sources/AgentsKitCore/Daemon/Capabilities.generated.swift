@@ -184,6 +184,7 @@ public enum Capability {
     public static let reportsNodes2 = "reports.nodes/2"
     public static let reportsProblem1 = "reports.problem/1"
     public static let reportsScope1 = "reports.scope/1"
+    public static let reportsScope2 = "reports.scope/2"
     public static let reportsValue2 = "reports.value/2"
     public static let reportsViews1 = "reports.views/1"
     public static let reportsViews2 = "reports.views/2"
@@ -907,7 +908,7 @@ public enum Capability {
         "reports/policy": "reports.scope/1",
         "reports/saveView": "reports.views/2",
         "reports/scopes": "reports.scope/1",
-        "reports/setPolicy": "reports.scope/1",
+        "reports/setPolicy": "reports.scope/2",
         "reports/usage": "reports/2",
         "reports/value": "reports.value/2",
         "reports/views": "reports.views/1",

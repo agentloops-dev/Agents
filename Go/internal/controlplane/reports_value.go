@@ -43,7 +43,7 @@ func (s *Service) valueReport(ctx context.Context, r wire.ReportRange, scope *wi
 	if !ok {
 		return wire.ReportValue{}, fail(invalidParams, "Say a range: day, week, month or threeMonths.")
 	}
-	scope, keep, _, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
+	scope, keep, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
 	if err != nil {
 		return wire.ReportValue{}, err
 	}

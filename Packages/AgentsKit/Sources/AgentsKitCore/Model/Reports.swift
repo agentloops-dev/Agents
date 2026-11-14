@@ -19,7 +19,7 @@ public extension DaemonAPI {
         public var range: ReportRange
         /// For `reports/export`; CSV when absent.
         public var format: ReportFormat?
-        /// Me, a group or the organisation (#1804); with none, an admin's is every person.
+        /// Me or the organisation (#1804); with none, an admin's is every person.
         public var scope: ReportScope?
 
         public init(range: ReportRange, format: ReportFormat? = nil, scope: ReportScope? = nil) {
@@ -29,20 +29,17 @@ public extension DaemonAPI {
         }
     }
 
-    /// Me, a group's people, or every person (#1804).
+    /// Me, or every person (#1804). There is no group lens (#5278).
     enum ReportScopeKind: String, Codable, Sendable, Hashable, CaseIterable {
-        case me, group, org
+        case me, org
     }
 
     /// Whose rows a report adds up (#1804).
     struct ReportScope: Codable, Sendable, Hashable {
         public var kind: ReportScopeKind
-        /// The group's id, for `group`.
-        public var group: String?
 
-        public init(kind: ReportScopeKind, group: String? = nil) {
+        public init(kind: ReportScopeKind) {
             self.kind = kind
-            self.group = group
         }
     }
 
@@ -57,8 +54,7 @@ public extension DaemonAPI {
         }
     }
 
-    /// `reports/scopes`' answer (#1804): Me, the groups the caller leads (every group for an
-    /// admin), and the organisation for an admin.
+    /// `reports/scopes`' answer (#1804): Me, and the organisation for an admin.
     struct ReportScopes: Codable, Sendable, Hashable {
         public var scopes: [ReportScopeOption]
         public var admin: Bool
@@ -69,18 +65,12 @@ public extension DaemonAPI {
         }
     }
 
-    /// Who sees what in Reports (#1804), an admin's to set in Console ▸ Report Policy.
+    /// The organisation's budget in Reports (#1804), an admin's to set in Console ▸ Report Policy.
     struct ReportPolicy: Codable, Sendable, Hashable {
-        /// A group lead sees the group's totals only, with no person or machine named.
-        public var totalsOnly: Bool
-        /// Each group's leads, by group id.
-        public var leads: [String: [String]]
-        /// A budget for a calendar month in US dollars, by group id, or "org".
+        /// A budget for a calendar month in US dollars, by "org" for the organisation.
         public var budgetsUSD: [String: Double]
 
-        public init(totalsOnly: Bool = false, leads: [String: [String]] = [:], budgetsUSD: [String: Double] = [:]) {
-            self.totalsOnly = totalsOnly
-            self.leads = leads
+        public init(budgetsUSD: [String: Double] = [:]) {
             self.budgetsUSD = budgetsUSD
         }
     }
@@ -116,8 +106,6 @@ public extension DaemonAPI {
         public var workingSeconds: Double
         /// Waiting for the person.
         public var waitingSeconds: Double
-        /// The person's groups, by id, for a group or organisation scope (#1804).
-        public var groups: [String]?
         /// What the agents did (#2019): sessions, pull requests and waits. Nil from a machine
         /// before #2019, whose rows count as nothing done.
         public var counts: ReportCounts?
@@ -127,7 +115,7 @@ public extension DaemonAPI {
                     workflow: String? = nil, cost: [String: Decimal] = [:],
                     inputTokens: Int = 0, outputTokens: Int = 0, thoughtTokens: Int = 0, cachedReadTokens: Int = 0,
                     cachedWriteTokens: Int = 0, turns: Int = 0, unpricedTurns: Int = 0,
-                    workingSeconds: Double = 0, waitingSeconds: Double = 0, groups: [String]? = nil,
+                    workingSeconds: Double = 0, waitingSeconds: Double = 0,
                     counts: ReportCounts? = nil) {
             self.at = at
             self.person = person
@@ -149,7 +137,6 @@ public extension DaemonAPI {
             self.unpricedTurns = unpricedTurns
             self.workingSeconds = workingSeconds
             self.waitingSeconds = waitingSeconds
-            self.groups = groups
             self.counts = counts
         }
     }
@@ -201,24 +188,18 @@ public extension DaemonAPI {
         public var admin: Bool
         /// The scope the rows are of (#1804).
         public var scope: ReportScope?
-        /// The rows name no person and no machine: a group lead's view under totals only.
-        public var personsHidden: Bool?
-        /// The name of each group the rows name.
-        public var groupNames: [String: String]?
         /// The scope's budget for a calendar month, in US dollars.
         public var budgetUSD: Double?
         /// What the scope spent this calendar month (UTC), in US dollars, beside the budget.
         public var monthSpentUSD: Double?
 
         public init(range: ReportRange, rows: [ReportRow], admin: Bool, scope: ReportScope? = nil,
-                    personsHidden: Bool? = nil, groupNames: [String: String]? = nil, budgetUSD: Double? = nil,
+                    budgetUSD: Double? = nil,
                     monthSpentUSD: Double? = nil) {
             self.range = range
             self.rows = rows
             self.admin = admin
             self.scope = scope
-            self.personsHidden = personsHidden
-            self.groupNames = groupNames
             self.budgetUSD = budgetUSD
             self.monthSpentUSD = monthSpentUSD
         }
@@ -238,7 +219,7 @@ public extension DaemonAPI {
         public var page: ReportPage
         public var scope: ReportScope
         public var range: ReportRange
-        /// person, folder, machine, runtime, group or workflow.
+        /// person, folder, machine, runtime or workflow.
         public var by: String?
 
         public init(id: String = "", name: String, page: ReportPage, scope: ReportScope, range: ReportRange, by: String? = nil) {

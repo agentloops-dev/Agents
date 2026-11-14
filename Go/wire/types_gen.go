@@ -12555,7 +12555,7 @@ type ReportNodesQuery struct {
 
 	Limit *int64 `json:"limit,omitzero"`
 
-	// Me, a group or the organisation (#1804).
+	// Me or the organisation (#1804).
 	Scope *ReportScope `json:"scope,omitzero"`
 }
 
@@ -12578,15 +12578,9 @@ const ReportPageAdoption ReportPage = "adoption"
 const ReportPageWorkflows ReportPage = "workflows"
 const ReportPageValue ReportPage = "value"
 
-// Who sees what in Reports (#1804), set by an admin in Console ▸ Report Policy.
+// The organisation's budget in Reports (#1804), set by an admin in Console ▸ Report Policy.
 type ReportPolicy struct {
-	// A group lead sees the group's totals only, with no person or machine named. An admin always sees each person.
-	TotalsOnly bool `json:"totalsOnly"`
-
-	// Each group's leads, by group id: users who see the group's reports.
-	Leads map[string][]string `json:"leads"`
-
-	// A budget for a calendar month in US dollars, by group id, or "org" for the organisation.
+	// A budget for a calendar month in US dollars, by "org" for the organisation.
 	BudgetsUSD map[string]float64 `json:"budgetsUSD"`
 }
 
@@ -12597,7 +12591,7 @@ type ReportQuery struct {
 	// For reports/export; CSV when absent.
 	Format *ReportFormat `json:"format,omitzero"`
 
-	// Me, a group or the organisation (#1804).
+	// Me or the organisation (#1804).
 	Scope *ReportScope `json:"scope,omitzero"`
 }
 
@@ -12650,9 +12644,6 @@ type ReportRow struct {
 	// Waiting for the person: TimeBucket's person.
 	WaitingSeconds float64 `json:"waitingSeconds"`
 
-	// The groups the person is in (#1804), by id, for a group or organisation scope; absent when the person is hidden.
-	Groups []string `json:"groups,omitzero"`
-
 	// What the agents did (#2019): sessions, pull requests and waits.
 	Counts *ReportCounts `json:"counts,omitzero"`
 
@@ -12669,18 +12660,14 @@ type ReportRow struct {
 type ReportScope struct {
 	Kind ReportScopeKind `json:"kind"`
 
-	// The group's id, for kind group.
-	Group *string `json:"group,omitzero"`
-
 	// The project's id, for kind project (#5277): the rows whose folder is in the project, on every machine.
 	Project *string `json:"project,omitzero"`
 }
 
-// Me (the caller's own machines), a group's people, every person (#1804), or a project's folders on every machine (#5277).
+// Me (the caller's own machines), every person (#1804), or a project's folders on every machine (#5277). There is no group lens (#5278).
 type ReportScopeKind string
 
 const ReportScopeKindMe ReportScopeKind = "me"
-const ReportScopeKindGroup ReportScopeKind = "group"
 const ReportScopeKindOrg ReportScopeKind = "org"
 const ReportScopeKindProject ReportScopeKind = "project"
 
@@ -12691,7 +12678,7 @@ type ReportScopeOption struct {
 	Name string `json:"name"`
 }
 
-// reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), every project (#5277), and the organisation for an admin.
+// reports/scopes' answer (#1804): Me, every project (#5277), and the organisation for an admin.
 type ReportScopes struct {
 	Scopes []ReportScopeOption `json:"scopes"`
 
@@ -15953,12 +15940,6 @@ type UsageReport struct {
 
 	// The scope the rows are of (#1804).
 	Scope *ReportScope `json:"scope,omitzero"`
-
-	// The rows say no person and no machine (#1804): a group lead's view when the policy says totals only.
-	PersonsHidden *bool `json:"personsHidden,omitzero"`
-
-	// The name of each group the rows name (#1804).
-	GroupNames map[string]string `json:"groupNames,omitzero"`
 
 	// The scope's budget for a calendar month, in US dollars (#1804); absent when it has none.
 	BudgetUSD *float64 `json:"budgetUSD,omitzero"`

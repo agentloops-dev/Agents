@@ -104,7 +104,7 @@ func (m *Methods) deploysReadMethod(ctx context.Context, params json.RawMessage,
 // scopeDeploys is the deploys of the machines whose people the scope takes, each once, and
 // whether any of them is still working out what some bring.
 func (s *Service) scopeDeploys(ctx context.Context, scope *wire.ReportScope, user string) ([]wire.DeployDeliveryFact, bool, error) {
-	_, keep, _, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
+	_, keep, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
 	if err != nil {
 		return nil, false, err
 	}

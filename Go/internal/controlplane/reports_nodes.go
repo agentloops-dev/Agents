@@ -87,7 +87,7 @@ func (s *Service) nodesReport(ctx context.Context, q wire.ReportNodesQuery, user
 		}
 		after = &c
 	}
-	scope, keep, _, err := s.reportScope(ctx, q.Scope, user, s.isAdmin(user))
+	scope, keep, err := s.reportScope(ctx, q.Scope, user, s.isAdmin(user))
 	if err != nil {
 		return wire.ReportNodes{}, err
 	}

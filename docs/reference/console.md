@@ -24,7 +24,7 @@ requests and cap notices come to them as cards.
 | **Projects** | Every project in the organisation (`projects/list`, #2671): its name and id, its owner, and its folders on each machine, as each machine last said them. Unlike the other pages, every member can open it, from **Projects** in the web page's sidebar (`#/console/projects` goes there). | **Rename…** and **Remove** a project, for its owner or an admin (`projects/set`, `projects/remove`). A project with folders in it is not removed: move its folders to another project first. A folder's own project is chosen in Folder Settings ▸ General ▸ Project on the Mac, or **Project…** in the folder's menu on the web page. |
 | **Sign-In** | The built-in providers (Apple, Google, GitHub), and your organisation's own (`signIn/orgProviders/list`, #1002): each one's kind, issuer, client ID, who may join, the secret's fingerprint and the redirect URI to copy. Under each, its claimed domains with their TXT records, and its SCIM with the base URL and its tokens. | **Add Provider…** (Okta, Microsoft Entra ID, Google Workspace, Other OIDC), **Check**, **Edit…**, **Replace Secret…**, **Move Up**, **Move Down**, **Turn Off**, **Remove…**; **Claim Domain**, **Check**, **Send people here**, **Require this provider** (with a preview first), **Remove…**; **Turn On SCIM**, the match attribute, **Make Token** (shown once), **Revoke…**. See [Sign in with your organisation](../how-to/sign-in-with-your-organisation.md). |
 | **Live Now** | Every agent that runs now on every machine (`console/live`, #2019): its runtime and workflow, whose machine it is, its state (working, waiting for its person, waiting on others), when it started and its cost so far. The most costly agent comes first. No title and nothing it said. | **Stop** ends one agent (`console/stopAgent`). **Stop All on This Machine…** asks first, then stops each agent on that machine. For an incident, **Stop All Agent Work** in Policy stops everything. |
-| **Report Policy** | Totals Only, the leads of each group, and a budget a month for each group and for the organisation (`reports/policy`). | Change them and select **Save** (`reports/setPolicy`). |
+| **Report Policy** | The organisation's budget a month (`reports/policy`). | Change them and select **Save** (`reports/setPolicy`). |
 | **Team Workflows** | Each bot (`console/teamWorkflows`): its group, its machines online, its spend today against its cap, the workflows it ran in the last 7 days, and the agents that run on its machines now. | **Stop** an agent that runs on a bot's machine (`bots/stopRun`). |
 | **Catalogue** | **Who Uses What**: each MCP server and skill that machines have from a catalogue, at each version, on how many machines and whose (`governance/usage`, #2019). Each machine sends this list each hour. **Approved**: each approval, for a group or a person (`governance/approvals`). | **Take Back** an approval (`governance/revoke`). |
 | **Requests** | Machines that ask to join, channel identities that ask to be linked (`links/requests`), each bot that stopped at its cap, and people who ask for an MCP server or skill (`governance/requests`). The count beside **Requests** includes them all. | Approve or refuse a join or a link. **Change Cap…** opens the bot's sheet. Approve an MCP server or skill for the person or for a group, or refuse it (`governance/decide`). |
@@ -33,12 +33,7 @@ requests and cap notices come to them as cards.
 
 ## Report Policy
 
-- **Totals Only:** when on, a group's leads see the spend and time of the group added up,
-  with no person or machine named. When off, they see each person. An admin always sees
-  each person.
-- **Leads:** the people of a group who see its reports in Reports, beside their own.
-- **Budgets:** an amount of US dollars for a calendar month, for each group and for the
-  organisation. Reports ▸ Spend shows the spend of this month against it, with a forecast.
+- **Budget:** an amount of US dollars for a calendar month for the organisation. Reports ▸ Spend shows the spend of this month against it, with a forecast.
 - **Edits not saved stay (#2072).** The page says "Not saved" until you select **Save**
   or **Revert**. A person who joins does not reset your edits. The edits stay when you open
   another page and come back. If you close the tab, the browser asks first.

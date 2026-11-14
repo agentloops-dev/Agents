@@ -183,6 +183,7 @@ const CapRelay1 = "relay/1"
 const CapReportsNodes2 = "reports.nodes/2"
 const CapReportsProblem1 = "reports.problem/1"
 const CapReportsScope1 = "reports.scope/1"
+const CapReportsScope2 = "reports.scope/2"
 const CapReportsValue2 = "reports.value/2"
 const CapReportsViews1 = "reports.views/1"
 const CapReportsViews2 = "reports.views/2"
@@ -969,7 +970,7 @@ var ControlCapabilities = pairs([][2]string{
 	{"reports/policy", "reports.scope/1"},
 	{"reports/saveView", "reports.views/2"},
 	{"reports/scopes", "reports.scope/1"},
-	{"reports/setPolicy", "reports.scope/1"},
+	{"reports/setPolicy", "reports.scope/2"},
 	{"reports/usage", "reports/2"},
 	{"reports/value", "reports.value/2"},
 	{"reports/views", "reports.views/1"},

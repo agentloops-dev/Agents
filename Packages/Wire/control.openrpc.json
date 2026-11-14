@@ -5742,8 +5742,8 @@
     },
     {
       "name": "reports/setPolicy",
-      "x-capability": "reports.scope/1",
-      "description": "Changes who sees what in Reports (#1804): totals only, group leads and budgets. Admins only.",
+      "x-capability": "reports.scope/2",
+      "description": "Changes the organisation budget in Reports (#1804). Admins only.",
       "tags": [
         {
           "name": "web"

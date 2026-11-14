@@ -11795,7 +11795,7 @@ export interface ReportNodesQuery {
   sort?: ReportNodesSort;
   cursor?: string;
   limit?: number;
-  /** Me, a group or the organisation (#1804). */
+  /** Me or the organisation (#1804). */
   scope?: ReportScope;
 }
 
@@ -11819,16 +11819,9 @@ export type ReportPage =
   | "workflows"
   | "value";
 
-/** Who sees what in Reports (#1804), set by an admin in Console ▸ Report Policy. */
+/** The organisation's budget in Reports (#1804), set by an admin in Console ▸ Report Policy. */
 export interface ReportPolicy {
-  /**
-   * A group lead sees the group's totals only, with no person or machine named. An admin always
-   * sees each person.
-   */
-  totalsOnly: boolean;
-  /** Each group's leads, by group id: users who see the group's reports. */
-  leads: Record<string, string[]>;
-  /** A budget for a calendar month in US dollars, by group id, or "org" for the organisation. */
+  /** A budget for a calendar month in US dollars, by "org" for the organisation. */
   budgetsUSD: Record<string, number>;
 }
 
@@ -11840,7 +11833,7 @@ export interface ReportQuery {
   range: ReportRange;
   /** For reports/export; CSV when absent. */
   format?: ReportFormat;
-  /** Me, a group or the organisation (#1804). */
+  /** Me or the organisation (#1804). */
   scope?: ReportScope;
 }
 
@@ -11878,11 +11871,6 @@ export interface ReportRow {
   workingSeconds: number;
   /** Waiting for the person: TimeBucket's person. */
   waitingSeconds: number;
-  /**
-   * The groups the person is in (#1804), by id, for a group or organisation scope; absent when the
-   * person is hidden.
-   */
-  groups?: string[];
   /** What the agents did (#2019): sessions, pull requests and waits. */
   counts?: ReportCounts;
   folder: string;
@@ -11898,8 +11886,6 @@ export interface ReportRow {
 /** Whose rows a report adds up (#1804). */
 export interface ReportScope {
   kind: ReportScopeKind;
-  /** The group's id, for kind group. */
-  group?: string;
   /**
    * The project's id, for kind project (#5277): the rows whose folder is in the project, on every
    * machine.
@@ -11908,12 +11894,11 @@ export interface ReportScope {
 }
 
 /**
- * Me (the caller's own machines), a group's people, every person (#1804), or a project's folders on
- * every machine (#5277).
+ * Me (the caller's own machines), every person (#1804), or a project's folders on every machine
+ * (#5277). There is no group lens (#5278).
  */
 export type ReportScopeKind =
   | "me"
-  | "group"
   | "org"
   | "project";
 
@@ -11923,10 +11908,7 @@ export interface ReportScopeOption {
   name: string;
 }
 
-/**
- * reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), every
- * project (#5277), and the organisation for an admin.
- */
+/** reports/scopes' answer (#1804): Me, every project (#5277), and the organisation for an admin. */
 export interface ReportScopes {
   scopes: ReportScopeOption[];
   admin: boolean;
@@ -14720,13 +14702,6 @@ export interface UsageReport {
   admin: boolean;
   /** The scope the rows are of (#1804). */
   scope?: ReportScope;
-  /**
-   * The rows say no person and no machine (#1804): a group lead's view when the policy says totals
-   * only.
-   */
-  personsHidden?: boolean;
-  /** The name of each group the rows name (#1804). */
-  groupNames?: Record<string, string>;
   /** The scope's budget for a calendar month, in US dollars (#1804); absent when it has none. */
   budgetUSD?: number;
   /**
@@ -17850,10 +17825,10 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   ReportNodeCost: { required: ["own", "total", "waste"], optional: [] },
   ReportNodes: { required: ["nodes", "limited", "unresolved"], optional: ["cursor"] },
   ReportNodesQuery: { required: ["kind"], optional: ["state", "repo", "label", "since", "sort", "cursor", "limit", "scope"] },
-  ReportPolicy: { required: ["totalsOnly", "leads", "budgetsUSD"], optional: [] },
+  ReportPolicy: { required: ["budgetsUSD"], optional: [] },
   ReportQuery: { required: ["range"], optional: ["format", "scope"] },
-  ReportRow: { required: ["at", "person", "personName", "host", "hostName", "runtime", "cost", "inputTokens", "outputTokens", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "turns", "unpricedTurns", "workingSeconds", "waitingSeconds", "folder"], optional: ["workflow", "groups", "counts", "project", "projectName"] },
-  ReportScope: { required: ["kind"], optional: ["group", "project"] },
+  ReportRow: { required: ["at", "person", "personName", "host", "hostName", "runtime", "cost", "inputTokens", "outputTokens", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "turns", "unpricedTurns", "workingSeconds", "waitingSeconds", "folder"], optional: ["workflow", "counts", "project", "projectName"] },
+  ReportScope: { required: ["kind"], optional: ["project"] },
   ReportScopeOption: { required: ["scope", "name"], optional: [] },
   ReportScopes: { required: ["scopes", "admin"], optional: [] },
   ReportValue: { required: ["range", "scope", "total", "waste", "unlinked", "perMergedPR", "prsMerged", "prsClosed", "prsReverted", "failedChecks", "issues", "releases"], optional: ["loaded", "overhead", "leadTimeSeconds", "cycleTimeSeconds", "estimateError", "forecastScore", "openEpics", "delivery", "limited"] },
@@ -18109,7 +18084,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   Usage: { required: ["used", "size", "at"], optional: ["cost"] },
   UsageBucket: { required: ["cost", "inputTokens", "outputTokens", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "turns", "unpricedTurns"], optional: [] },
   UsageHistory: { required: ["hours", "days", "now"], optional: ["timeZone"] },
-  UsageReport: { required: ["range", "rows", "admin"], optional: ["scope", "personsHidden", "groupNames", "budgetUSD", "monthSpentUSD"] },
+  UsageReport: { required: ["range", "rows", "admin"], optional: ["scope", "budgetUSD", "monthSpentUSD"] },
   UsageRollup: { required: ["hours", "days"], optional: ["work"] },
   UsageRollupPeriod: { required: ["at", "rows"], optional: [] },
   UsageRollupRow: { required: ["runtime", "cost", "inputTokens", "outputTokens", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "turns", "unpricedTurns", "workingSeconds", "waitingSeconds", "folder"], optional: ["workflow", "counts", "limitTokens", "route"] },

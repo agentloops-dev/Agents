@@ -300,7 +300,7 @@ func (m *Methods) buildsReadMethod(ctx context.Context, method string, params js
 
 // scopeBuilds is the copies of repo from the machines whose people the scope takes.
 func (s *Service) scopeBuilds(ctx context.Context, scope *wire.ReportScope, user string, repo citimings.Repo) (keptBuilds, error) {
-	_, keep, _, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
+	_, keep, err := s.reportScope(ctx, scope, user, s.isAdmin(user))
 	if err != nil {
 		return keptBuilds{}, err
 	}
