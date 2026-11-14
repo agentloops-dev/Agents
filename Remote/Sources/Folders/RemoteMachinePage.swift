@@ -26,6 +26,7 @@ struct RemoteMachinePage: View {
         let words = model.need(of: host).map { MachineNeedWords.line($0, name: name, row: row) }
         ScrollViewReader { proxy in
             List {
+                RemoteMachineSessionsSection(host: host)
                 Section {
                     Text(words ?? (offline ? "Offline" : "Online"))
                         .foregroundStyle(offline ? StateTint.failure.style(or: .secondary) : AnyShapeStyle(Paper.secondary))
