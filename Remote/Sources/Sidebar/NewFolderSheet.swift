@@ -1,9 +1,10 @@
 import AgentsKitCore
 import SwiftUI
 
-/// The **+** over the sidebar's folders (#4036), as the window's File ▸ Add Folder… and
-/// Clone Git URL… and the page's + menu: per machine, this Mac first. A machine that is
-/// offline cannot take one. The folder goes to its default project; Connect your tools stays
+/// The **+** over the sidebar's folders (#4036), as the window's + over its sidebar and the
+/// page's + menu (#5447): New Session; Add Folder… and Clone Git URL… per machine, this Mac
+/// first; New Machine (no New App…, which is the Mac's and the web's). A machine that is
+/// offline cannot take a folder. The folder goes to its default project; Connect your tools stays
 /// on the Mac and the web.
 struct NewFolderMenu: View {
     @Environment(RemoteModel.self) private var model
@@ -12,6 +13,12 @@ struct NewFolderMenu: View {
     var body: some View {
         let machines = model.folderMachines
         Menu {
+            // In the folder last started in, or the one picked (#628), as the window's + (#5447).
+            Button("New Session", icon: "square.and.pencil") {
+                if let folder = model.newSessionFolder { model.sidebarItem = .folder(folder) }
+            }
+            .disabled(model.isStale || model.newSessionFolder == nil)
+            Divider()
             ForEach(machines) { machine in
                 if machines.count > 1 {
                     Section(machine.offline ? "\(machine.title) — Offline" : machine.title) {
@@ -21,10 +28,12 @@ struct NewFolderMenu: View {
                     items(for: machine)
                 }
             }
+            Divider()
+            NewMachineItems()
         } label: {
-            Label("New Folder", icon: "plus")
+            Label("New", icon: "plus")
         }
-        .accessibilityHint("Adds a folder on a machine, or clones one from a Git URL")
+        .accessibilityHint("Starts a new session, adds a folder on a machine or clones one from a Git URL, or makes a new machine")
         .sheet(item: $adding) { kind in
             NewFolderSheet(kind: kind)
         }

@@ -986,20 +986,40 @@ struct WorkItemPage: View {
             detailRead = at
             fromDevice = true
         }
-        var last: String?
-        for machine in machines {
-            do {
-                let got = try await model.forgeItem(node, cursor: nil, on: machine.id)
-                guard asked == mine else { return }
-                detail = (machine.id, got)
-                detailRead = Date()
-                fromDevice = false
-                forgeProblem = nil
-                model.keepWork(KeptItem(host: machine.id, got: got), .item, node.ref)
-                return
-            } catch {
-                last = WorkList.failureWords(error)
+        // Every machine at once, and the first that answers wins (#5449): a slow or offline machine does not hold the
+        // page, and an error shows only when no machine read it.
+        let (node, model) = (node, model)
+        let (won, last) = await withTaskGroup(of: (MachineRef, Result<DaemonAPI.ForgeItemDetail, Error>).self,
+                                              returning: ((host: MachineRef, got: DaemonAPI.ForgeItemDetail)?, String?).self) { group in
+            for machine in machines {
+                group.addTask {
+                    do {
+                        return (machine.id, .success(try await model.forgeItem(node, cursor: nil, on: machine.id)))
+                    } catch {
+                        return (machine.id, .failure(error))
+                    }
+                }
             }
+            var last: String?
+            for await (host, result) in group {
+                switch result {
+                case let .success(got):
+                    group.cancelAll()
+                    return ((host, got), last)
+                case let .failure(error):
+                    last = WorkList.failureWords(error)
+                }
+            }
+            return (nil, last)
+        }
+        if let won {
+            guard asked == mine else { return }
+            detail = won
+            detailRead = Date()
+            fromDevice = false
+            forgeProblem = nil
+            model.keepWork(KeptItem(host: won.host, got: won.got), .item, node.ref)
+            return
         }
         guard asked == mine else { return }
         forgeProblem = last ?? WorkList.notReadHere

@@ -369,20 +369,25 @@ export function WorkPage({ store, kind, ref }: { store: Store; kind: WorkKind; r
         const kept = await keptWorkRead<{ host: string; got: ForgeItemDetail }>("item", ref);
         if (current && kept && !detail.peek()) { detail.value = kept.value; detailAt.value = kept.at; fromDevice.value = true; }
       }
+      // Every machine at once, and the first that answers wins (#5449): a slow or offline machine does not hold the page,
+      // and an error shows only when no machine read it.
       let last: string | null = null;
-      for (const h of forgeHosts) {
-        try {
-          const got = await store.link.call(kind === "pr" ? "forge/pull" : "forge/issue", { node }, h.id);
-          if (current) {
-            detail.value = { host: h.id, got }; detailAt.value = Date.now(); fromDevice.value = false; forgeProblem.value = null;
-            keepWork("item", ref, { host: h.id, got });
+      try {
+        const won = await Promise.any(forgeHosts.map(async (h) => {
+          try {
+            return { host: h.id, got: await store.link.call(kind === "pr" ? "forge/pull" : "forge/issue", { node }, h.id) };
+          } catch (e) {
+            last = describe(e);
+            throw e;
           }
-          return;
-        } catch (e) {
-          last = describe(e);
+        }));
+        if (current) {
+          detail.value = won; detailAt.value = Date.now(); fromDevice.value = false; forgeProblem.value = null;
+          keepWork("item", ref, won);
         }
+      } catch {
+        if (current) forgeProblem.value = last ?? notReadHere;
       }
-      if (current) forgeProblem.value = last ?? notReadHere;
     })().finally(() => { if (current) reading.value = false; });
     return () => { current = false; };
   }, [kind, ref, forgeHosts.map((h) => h.id).join(","), asked.value]);

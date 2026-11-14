@@ -98,6 +98,27 @@ final class WorkFeaturesState {
     private enum Answer: Sendable {
         case one(DaemonAPI.WorkFeatures)
         case features(DaemonAPI.ForgeFeatures)
+
+        var found: [DaemonAPI.ForgeFeature] {
+            switch self {
+            case let .one(one): one.features.map(\.feature)
+            case let .features(list): list.features
+            }
+        }
+
+        var approvals: [String] {
+            switch self {
+            case let .one(one): one.approvals ?? []
+            case let .features(list): list.approvals ?? []
+            }
+        }
+
+        var errors: [DaemonAPI.ForgeListError] {
+            switch self {
+            case let .one(one): one.errors ?? []
+            case let .features(list): list.errors ?? []
+            }
+        }
     }
 
     /// Read the features, unless they were read for this Refresh and board already; then, from an
@@ -125,6 +146,42 @@ final class WorkFeaturesState {
         var got: [(host: MachineRef, answer: Answer)] = []
         var prs: [DaemonAPI.ForgeItem] = []
         let narrow = board.isEmpty ? nil : board
+        func drawAnswers(all: Bool) {
+            approvals = []
+            errors = []
+            items = [:]
+            itemErrors = [:]
+            places = [:]
+            unread = []
+            waiting = []
+            pulls = [:]
+            oneRead = [:]
+            var lists: [[DaemonAPI.ForgeFeature]] = []
+            var ones: [DaemonAPI.WorkFeatures] = []
+            let shown = all ? WorkList.shownErrors(got.map { ($0.answer.found.flatMap { $0.refs ?? [] }, $0.answer.errors) })
+                : got.map { _ in [] }
+            for (i, entry) in got.enumerated() {
+                let machine = machines.count > 1 ? machines.first { $0.id == entry.host }?.name : nil
+                if case let .one(one) = entry.answer { ones.append(one) }
+                lists.append(entry.answer.found)
+                approvals += entry.answer.approvals
+                errors += shown[i].map { WorkList.errorWords($0, machine: machine) }
+            }
+            let one = WorkFeatures.read(ones)
+            oneRead = one.items
+            places = one.places
+            unread = one.unread
+            waiting = one.waiting
+            let merged = WorkFeatures.merge(lists)
+            // With every machine on `work/features`, every feature is read: an open one draws at once.
+            if older.isEmpty {
+                items = Dictionary(merged.map { ($0.name.lowercased(), one.items[$0.name.lowercased()] ?? []) }, uniquingKeysWith: { a, _ in a })
+            }
+            pulls = WorkFeatures.pullsByLabel(prs)
+            features = merged
+            shownFor = board
+            fromDeviceRead = nil
+        }
         await withTaskGroup(of: (MachineRef, Answer, [DaemonAPI.ForgeItem]).self) { group in
             for machine in machines {
                 let one = reads.contains(machine.id)
@@ -145,51 +202,17 @@ final class WorkFeaturesState {
                     return (machine.id, answer, await open?.items ?? [])
                 }
             }
+            // The first machine to answer draws the page (#5449), and each one after adds its features: a slow or
+            // offline machine does not hold it. One machine's answer for a forge is enough, so errors wait for all.
             for await (host, answer, open) in group {
                 got.append((host, answer))
                 prs += open
+                if ask == mine, got.count < machines.count, !answer.found.isEmpty { drawAnswers(all: false) }
             }
         }
         guard ask == mine else { return }
-        approvals = []
-        errors = []
-        items = [:]
-        itemErrors = [:]
-        places = [:]
-        unread = []
-        waiting = []
-        pulls = [:]
-        oneRead = [:]
-        var lists: [[DaemonAPI.ForgeFeature]] = []
-        var ones: [DaemonAPI.WorkFeatures] = []
-        for entry in got {
-            let machine = machines.count > 1 ? machines.first { $0.id == entry.host }?.name : nil
-            let (found, approved, problems): ([DaemonAPI.ForgeFeature], [String]?, [DaemonAPI.ForgeListError]?)
-            switch entry.answer {
-            case let .one(one):
-                ones.append(one)
-                (found, approved, problems) = (one.features.map(\.feature), one.approvals, one.errors)
-            case let .features(list):
-                (found, approved, problems) = (list.features, list.approvals, list.errors)
-            }
-            lists.append(found)
-            approvals += approved ?? []
-            errors += (problems ?? []).map { WorkList.errorWords($0, machine: machine) }
-        }
-        let one = WorkFeatures.read(ones)
-        oneRead = one.items
-        places = one.places
-        unread = one.unread
-        waiting = one.waiting
-        let merged = WorkFeatures.merge(lists)
-        // With every machine on `work/features`, every feature is read: an open one draws at once.
-        if older.isEmpty {
-            items = Dictionary(merged.map { ($0.name.lowercased(), one.items[$0.name.lowercased()] ?? []) }, uniquingKeysWith: { a, _ in a })
-        }
-        pulls = WorkFeatures.pullsByLabel(prs)
-        features = merged
-        shownFor = board
-        fromDeviceRead = nil
+        drawAnswers(all: true)
+        let merged = features ?? []
         guard !older.isEmpty else {
             // Kept whole only when every machine gave it in one read, and none failed.
             if errors.isEmpty {
@@ -232,7 +255,7 @@ final class WorkFeaturesState {
         let board = board
         let machines = older
         var got: [(host: MachineRef, item: DaemonAPI.ForgeItem)] = []
-        var problems: [String] = []
+        var answers: [(host: MachineRef, list: DaemonAPI.ForgeList)] = []
         await withTaskGroup(of: (MachineRef, Result<DaemonAPI.ForgeList, Error>).self) { group in
             for machine in machines {
                 group.addTask {
@@ -245,20 +268,28 @@ final class WorkFeaturesState {
                     }
                 }
             }
+            // Each machine's issues draw as it answers (#5449); an error shows once every machine answered, and only
+            // for a forge that no machine read.
             for await (host, result) in group {
-                let machine = machines.count > 1 ? machines.first { $0.id == host }?.name : nil
+                let list: DaemonAPI.ForgeList
                 switch result {
-                case let .success(list):
-                    got += list.items.map { (host, $0) }
-                    problems += (list.errors ?? []).map { WorkList.errorWords($0, machine: machine) }
-                case let .failure(error):
-                    problems.append(machine.map { "\($0): \(error.localizedDescription)" } ?? error.localizedDescription)
+                case let .success(read): list = read
+                case let .failure(error): list = .init(errors: [.init(forge: "", message: error.localizedDescription)])
                 }
+                answers.append((host, list))
+                got += list.items.map { (host, $0) }
+                if ask == mine, answers.count < machines.count, !list.items.isEmpty { items[key] = (oneRead[key] ?? []) + got.map(\.item) }
             }
         }
         guard ask == mine else { return }
+        let shown = WorkList.shownErrors(answers.map { ($0.list.items.map(\.node.ref), $0.list.errors ?? []) })
         items[key] = (oneRead[key] ?? []) + got.map(\.item)
-        itemErrors[key] = problems
+        itemErrors[key] = answers.enumerated().flatMap { i, entry in
+            let machine = machines.count > 1 ? machines.first { $0.id == entry.host }?.name : nil
+            return shown[i].map { e in
+                e.forge.isEmpty ? machine.map { "\($0): \(e.message)" } ?? e.message : WorkList.errorWords(e, machine: machine)
+            }
+        }
         let epics = WorkFeatures.opened(got.map(\.item)).epics
         let hosts = Dictionary(got.map { ($0.item.node.ref, $0.host) }, uniquingKeysWith: { a, _ in a })
         await withTaskGroup(of: Void.self) { group in

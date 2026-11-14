@@ -10,10 +10,10 @@
 import { effect, signal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
 import { keepWork, keptWorkRead } from "../model/localCopy";
-import type { Agent, ForgeFeature, ForgeItem, ForgePlan } from "../protocol/generated";
+import type { Agent, ForgeFeature, ForgeFeatures, ForgeItem, ForgeListError, ForgePlan } from "../protocol/generated";
 import type { Store } from "../model/store";
 import { describe } from "../model/errors";
-import { boardChoices, boardName, errorWords, labelColor, noForgeHere, shortRef, withBoard } from "../model/work";
+import { boardChoices, boardName, errorWords, labelColor, noForgeHere, shortRef, shownErrors, withBoard } from "../model/work";
 import { ErrorStrip, FromDeviceStrip, LabelChip, PlaceholderRows, RefreshButton, StateIcon } from "./WorkParts";
 import { boardHosts, boards, forgeHosts, listHosts, loadBoards } from "../model/workLists";
 import { Choice } from "./Work";
@@ -110,29 +110,45 @@ async function loadFeatures(store: Store) {
       features.value = null;
     }
   }
-  const got = await Promise.all(hosts.map(async (h) => {
-    try {
-      return { host: h, list: await store.link.call("forge/features", withBoard({}, on), h.id) };
-    } catch (e) {
-      return { host: h, list: { features: [], errors: [{ forge: "", message: describe(e) }] } };
+  // The first machine to answer draws the page (#5449), and each one after adds its features: a slow or offline machine
+  // does not hold it. One machine's answer for a forge is enough, so the errors wait for every machine.
+  const got: { host: (typeof hosts)[number]; list: ForgeFeatures }[] = [];
+  let first = true;
+  const draw = (all: boolean) => {
+    if (first) {
+      first = false;
+      approvals.value = [];
+      items.value = {};
+      plans.value = {};
+      planning.clear();
+      itemReads.clear();
+      featureOpen.value = {};
+      shownFor = on;
+      fromDevice.value = false;
     }
+    // Kept only once every machine answered.
+    answered = all;
+    if (all) reading.value = false;
+    const shown = all ? shownErrors(got.map(({ list }) => ({ refs: list.features.flatMap((f) => f.refs ?? []), errors: list.errors ?? [] })))
+      : got.map(() => []);
+    errors.value = got.flatMap(({ host }, i) => shown[i]!.map((e) => errorWords(e, hosts.length > 1 ? host.name : undefined)));
+    features.value = mergeFeatures(got.map(({ list }) => list.features));
+    approvals.value = got.flatMap(({ list }) => list.approvals ?? []);
+    // Every feature's issues at once, so a bar and its epics draw without a click; Finished has no open issue.
+    for (const f of features.value) if (!itemReads.has(f.name.toLowerCase()) && (f.open > 0 || (f.issues ?? 1) > 0)) void readItems(store, f.name);
+  };
+  await Promise.all(hosts.map(async (h) => {
+    let list: ForgeFeatures;
+    try {
+      list = await store.link.call("forge/features", withBoard({}, on), h.id);
+    } catch (e) {
+      list = { features: [], errors: [{ forge: "", message: describe(e) }] };
+    }
+    got.push({ host: h, list });
+    if (asked.value === mine && board.value === on && got.length < hosts.length && list.features.length > 0) draw(false);
   }));
   if (asked.value !== mine || board.value !== on) return;
-  reading.value = false;
-  approvals.value = [];
-  items.value = {};
-  plans.value = {};
-  planning.clear();
-  itemReads.clear();
-  featureOpen.value = {};
-  shownFor = on;
-  answered = true;
-  fromDevice.value = false;
-  errors.value = got.flatMap(({ host, list }) => (list.errors ?? []).map((e) => errorWords(e, hosts.length > 1 ? host.name : undefined)));
-  features.value = mergeFeatures(got.map(({ list }) => list.features));
-  approvals.value = got.flatMap(({ list }) => list.approvals ?? []);
-  // Every feature's issues at once, so a bar and its epics draw without a click; Finished has no open issue.
-  for (const f of features.value) if (f.open > 0 || (f.issues ?? 1) > 0) void readItems(store, f.name);
+  draw(true);
 }
 
 /** An opened feature's open issues from every machine. */
@@ -141,17 +157,31 @@ async function readItems(store: Store, name: string) {
   const mine = asked.value;
   const on = board.value;
   const hosts = listHosts(store, on);
-  const got = await Promise.all(hosts.map(async (h) => {
+  // Each machine's issues draw as it answers (#5449); an error shows once every machine answered, and only for a forge
+  // that no machine read.
+  const got: { host: string; machine: string | undefined; items: ForgeItem[]; errors: ForgeListError[] }[] = [];
+  const key = name.toLowerCase();
+  const draw = (all: boolean) => {
+    const shown = all ? shownErrors(got.map((g) => ({ refs: g.items.map((i) => i.node.ref), errors: g.errors }))) : got.map(() => []);
+    items.value = { ...items.value, [key]: {
+      items: got.flatMap((g) => g.items.map((item) => ({ host: g.host, item }))),
+      errors: got.flatMap((g, i) => shown[i]!.map((e) => e.forge !== "" ? errorWords(e, g.machine) : g.machine ? `${g.machine}: ${e.message}` : e.message)),
+    } };
+  };
+  await Promise.all(hosts.map(async (h) => {
     const machine = hosts.length > 1 ? h.name : undefined;
+    let one: (typeof got)[number];
     try {
       const list = await store.link.call("forge/issues", withBoard({ state: "open", limit: 100, feature: name }, on), h.id);
-      return { items: list.items.map((item) => ({ host: h.id, item })), errors: (list.errors ?? []).map((e) => errorWords(e, machine)) };
+      one = { host: h.id, machine, items: list.items, errors: list.errors ?? [] };
     } catch (e) {
-      return { items: [], errors: [machine ? `${machine}: ${describe(e)}` : describe(e)] };
+      one = { host: h.id, machine, items: [], errors: [{ forge: "", message: describe(e) }] };
     }
+    got.push(one);
+    if (asked.value === mine && board.value === on && got.length < hosts.length && one.items.length > 0) draw(false);
   }));
   if (asked.value !== mine || board.value !== on) return;
-  items.value = { ...items.value, [name.toLowerCase()]: { items: got.flatMap((g) => g.items), errors: got.flatMap((g) => g.errors) } };
+  draw(true);
 }
 
 /** An open feature's epics' plans, each read once until the page is read again (note 16: until work/features, #4586). */

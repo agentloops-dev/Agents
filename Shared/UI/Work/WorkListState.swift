@@ -192,8 +192,9 @@ final class WorkListState {
             guard ask == mine else { return }
         }
         var got: [(host: MachineRef, list: DaemonAPI.ForgeList)] = []
+        let machines = model.workMachines(board: board)
         await withTaskGroup(of: (MachineRef, DaemonAPI.ForgeList).self) { group in
-            for machine in model.workMachines(board: board) {
+            for machine in machines {
                 group.addTask {
                     do {
                         return (machine.id, try await model.forgeList(kind, .init(state: state, limit: 100,
@@ -204,9 +205,30 @@ final class WorkListState {
                     }
                 }
             }
-            for await (host, list) in group { got.append((host, list)) }
+            // Each machine's rows draw as it answers (#5449): the first machine that answers for a forge is enough, and
+            // a slow or offline one does not hold the list. The others keep the rows they had; errors wait for all.
+            for await (host, list) in group {
+                got.append((host, list))
+                guard ask == mine, got.count < machines.count, !list.items.isEmpty else { continue }
+                var drawn = got.map { entry in
+                    var quiet = entry.list
+                    quiet.errors = nil
+                    return (host: entry.host, list: quiet)
+                }
+                drawn += (lists ?? []).filter { had in !got.contains { $0.host == had.host } }
+                lineage = known.nodes
+                lineageCursor = known.cursor
+                lists = drawn
+            }
         }
         guard ask == mine else { return }
+        // One machine's answer for a forge is enough: the others' errors for it go (#5449).
+        let shown = WorkList.shownErrors(got.map { ($0.list.items.map(\.node.ref), $0.list.errors ?? []) })
+        got = got.enumerated().map { i, entry in
+            var list = entry.list
+            list.errors = shown[i].isEmpty ? nil : shown[i]
+            return (entry.host, list)
+        }
         if kind == .issue, !readBoards.isEmpty || !fromDevice { boards = readBoards }
         // Every machine failed over this device's copy: its rows stay, dimmed under what the forges said, with no
         // next page (#4392, #4930), as the web page keeps them.

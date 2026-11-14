@@ -284,9 +284,6 @@ private struct FolderWindowSidebar: View {
 
     var body: some View {
         List(selection: $picked) {
-            Section {
-                FolderNewSessionRow(folder: summary.key)
-            }
             ForEach(SidebarSmartRow.allCases.filter(smartGroups.contains), id: \.self) { row in
                 SmartFold(row: row, folders: [summary.key], folds: folds, query: "")
             }
@@ -314,6 +311,9 @@ private struct FolderWindowSidebar: View {
             .padding(.vertical, 8)
             .overlay(alignment: .top) { Divider() }
         }
+        .toolbar {
+            ToolbarItem { FolderNewSessionButton(window: window) }
+        }
         .onAppear { folds.set(summary.key, open: true) }
         .onChange(of: picked) { _, picks in
             if picks.count == 1, let pick = picks.first, window.pick != pick { window.pick = pick }
@@ -324,28 +324,19 @@ private struct FolderWindowSidebar: View {
     }
 }
 
-/// New Session at the top of a folder's window: in this folder, with no menu of others.
-private struct FolderNewSessionRow: View {
-    @Environment(WindowRequests.self) private var requests
-    let folder: FolderKey
+/// New Session over a folder's window's sidebar (#5447; was the list's first row): in this
+/// folder, with no menu of others, as the main window's + has it with the rest.
+private struct FolderNewSessionButton: View {
+    let window: FolderWindowState
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(icon: "square.and.pencil")
-                .sidebarMark(Paper.accent)
-                .frame(width: 16)
-                .accessibilityHidden(true)
-            Text("New Session")
-                .lineLimit(1)
-            Spacer(minLength: 0)
+        Button {
+            window.pick = .folder(window.key)
+            window.requests.focusPrompt()
+        } label: {
+            Label("New Session", toolbarIcon: "square.and.pencil")
         }
-        .appText(.supporting)
-        .contentShape(Rectangle())
-        .simultaneousGesture(TapGesture().onEnded { requests.focusPrompt() })
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("New Session")
-        .sidebarInk(.folder(folder))
-        .tag(SidebarItem.folder(folder))
+        .help("Start a new session in this folder (⌘N)")
     }
 }
 

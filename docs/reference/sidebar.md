@@ -15,9 +15,9 @@ iPhone, and on a narrow web page, it is the first screen, and what you open goes
 | Part | What it is |
 | --- | --- |
 | **Work** | **Docs**, **Messages**, then a row for each list: **Issues**, **Pull Requests** and the rest. On the web page, Work is a section of the bar, with the same pages. |
-| **Status** | What is going on, and no settings: **Runtimes** (each runtime once, with your accounts and a line per machine) and **Events**. Your connectors, secrets and outside accounts are in **Settings ▸ You**. |
+| **Status** | What is going on, and no settings: **Runtimes** (each runtime once, with your accounts and a line per machine), **Events**, **Secrets** and **Accounts** (what happened to them last). To change your connectors, secrets and outside accounts, use **Settings ▸ You**. |
 | **Machines** | A page for each machine: its disks, CPU and memory, **Runtimes** installed, **Resources** and **Worktrees**. |
-| **Usage** | Pages about past work: **Cost**, **Tokens**, **Time**, and **Milestones** until you have done every first step. |
+| **Reports** | Pages about past work: **Multiplier**, **Cost**, **Tokens**, **Time**, **Velocity**, **Summary** while the daily summary is on, and **Milestones** until you have done every first step. On the iPhone and the iPad, Reports has **Multiplier**, **Velocity** and **Summary** only. |
 | Smart groups | **Pinned**, **Needs You**, **For Review**, **Working** and **Unread**, each across every folder and host. See [Smart groups](#smart-groups). |
 | One group per project | Each project's sessions on every machine, and its folder's workflows. A project with one folder is that folder's group. See [A folder's group](#a-folders-group) and [A project with folders on several machines](#a-project-with-folders-on-several-machines). |
 | **Archived folders** | Folders you put away. The heading stays folded until you open it. Each has **Unarchive**. |
@@ -31,9 +31,9 @@ stays in its place however busy its folder is.
 The folders of one project are one group, in the place of the first of them. See
 [A project with folders on several machines](#a-project-with-folders-on-several-machines).
 
-**Status**, **Machines** and **Usage** each fold, as a folder does. All start open.
-**Status** has **Runtimes** and **Events** on the Mac and on the web page, where it is a
-section of the bar. The iPhone and the iPad have the same **Status**. On the iPhone and the iPad,
+**Work**, **Status**, **Machines** and **Reports** each fold, as a folder does. All start open.
+They are in this order on the Mac, the iPhone and the iPad. On the web page, each is a
+section of the bar. **Status** is the same on all three clients. On the iPhone and the iPad,
 **Resources** is on This Mac's page only, and a chat's lease line opens it there. **Runtimes** shows its icon in red when no runtime
 can start. When one of your connectors does not answer or one of your connections ended
 (for example, a GitLab token that expired), **Settings ▸ You ▸ Connectors** shows a warning
@@ -89,6 +89,23 @@ in the sidebar.
 The choice is kept on your Mac, with your other display choices, so every client shows
 the same groups.
 
+## The + button
+
+The **+** over the sidebar is always there. On the Mac it is in the toolbar. On the
+iPhone and the iPad it is in the sidebar's top bar. On the web page it is at the head of
+the folders column. It holds:
+
+- **New Session.** It starts a session in the folder that you last started one in, or in
+  the folder that you chose. It puts the cursor in the prompt.
+- **Add Folder…** and **Clone Folder from Git URL…**, for this Mac or a server.
+- **New App…**, on the Mac and the web page.
+- **New Machine…**. With two or more machine providers, **New Machine on** lets you
+  choose the provider.
+
+The sidebar has no **New Session** or **New Machine** row. On the Mac, ⌘N and the
+**File** menu also start a session. A folder's own window has a **New Session** button
+over its sidebar.
+
 ## A folder's group
 
 The folder's name is the group's heading. The heading has no count: the **Sessions**
@@ -96,10 +113,9 @@ fold counts the sessions. A folder starts folded. Click or tap its
 heading to open it. In order, an open folder holds:
 
 - **Its pinned pages,** when it has some.
-- **Sessions,** a fold with a grey count of the folder's live sessions. Its first row is
-  **New Session**, which starts a session in this folder and puts the cursor in the prompt.
-  A folder with no live session still has the fold, with only **New Session** in it. A
-  search hides **New Session**. Then its sessions, newest started first. Its pinned
+- **Sessions,** a fold with a grey count of the folder's live sessions, newest started
+  first. A folder with no live session has no fold. To start a session in the folder, use
+  the folder's menu, or **New Session** in the **+**. Its pinned
   sessions are in **Pinned** instead. Each row's mark says its state. See
   [Statuses and groups](statuses.md).
 - **Workflows,** a fold with a grey count of the folder's workflows. It is closed at

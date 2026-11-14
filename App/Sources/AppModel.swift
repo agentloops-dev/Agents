@@ -852,7 +852,7 @@ final class AppModel {
         draftWorktree = nil
     }
 
-    /// The folder New Session at the top of the sidebar starts in (#495, #2160):
+    /// The folder New Session in the toolbar's + starts in (#495, #2160, #5447):
     /// `NewSessionFolder`, the Remote's rule too.
     var newSessionFolder: FolderKey? {
         NewSessionFolder.choose(live: liveFolders.map(\.key), remembered: rememberedNewSessionFolder,

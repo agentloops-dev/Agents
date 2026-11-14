@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="520" viewBox="0 0 390 520" font-family="-apple-system, 'SF Pro Text', Helvetica, sans-serif"><style>.ink{fill:#1F1D1A}.sec{fill:#6F6A62}.h{font-size:11px;font-weight:600;letter-spacing:.4px;fill:#6F6A62}.r{font-size:14px;fill:#1F1D1A}.f{font-size:12px;fill:#6F6A62}.note{font-size:12px;fill:#b0006a;font-style:italic}.b{font-size:14px;font-weight:600;fill:#1F1D1A}</style>
+<rect x="0.5" y="0.5" width="389" height="519" rx="24" fill="#FBF9F4" stroke="#E2DCCF"/>
+<text x="20" y="44" class="f">‹ Machines</text>
+<text x="20" y="80" class="b" font-size="20">machine-29</text><text x="20" y="100" class="f">Online · 11 sessions · 1 running</text>
+<text x="20" y="140" class="h">SESSIONS</text>
+<text x="20" y="164" class="f">WORKING · 1</text>
+<circle cx="28" cy="190" r="5" fill="#3E8E5A"/><text x="44" y="186" class="r">Reports: remove group lens…</text><text x="44" y="204" class="f">Claude · now</text>
+<text x="20" y="240" class="f">WAITING · 9</text>
+<circle cx="28" cy="266" r="5" fill="#C98A1B"/><text x="44" y="262" class="r">#5473 conflict-risk.sh…</text><text x="44" y="280" class="f">Auto · 4 min ago</text>
+<circle cx="28" cy="306" r="5" fill="#C98A1B"/><text x="44" y="302" class="r">#5458 New Session suggestions…</text><text x="44" y="320" class="f">Claude · 27 min ago</text>
+<text x="44" y="348" class="f">Show 7 more</text>
+<text x="20" y="384" class="f">DONE · 1</text>
+<circle cx="28" cy="410" r="5" fill="none" stroke="#6F6A62" stroke-width="1.4"/><text x="44" y="406" class="r">Pull Requests change files…</text><text x="44" y="424" class="f">Claude · 1 min ago</text>
+<text x="20" y="500" class="f">Last update 10:42 am</text>
+</svg>
