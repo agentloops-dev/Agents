@@ -265,6 +265,7 @@ var writes = methodSet(
 	"machines/lendGit",
 	"machines/lendSignIn",
 	"machines/remove",
+	"machines/retrySetup",
 	"machines/startEnroll",
 	"machines/update",
 	"links/approve",
@@ -663,6 +664,20 @@ func (m *Methods) Handle(method string, params json.RawMessage, from Caller) (an
 			return nil, fail(noSuchHost, "No machine is called %s.", host)
 		}
 		return map[string]any{}, nil
+	case "machines/retrySetup":
+		// Try Again on a machine's set-up (#5355).
+		request, err := require[wire.MachineRequest](params, "MachineRequest")
+		if err != nil {
+			return nil, err
+		}
+		host, err := m.ownHostNamed(from, string(request.Host))
+		if err != nil {
+			return nil, err
+		}
+		if m.records.Host(host) == nil || !m.owns(from, host) {
+			return nil, fail(noSuchHost, "No machine is called %s.", host)
+		}
+		return map[string]any{}, m.s.retrySetup(ctx, host)
 	case "machines/deletePreview":
 		// Delete's question (#3979): the worktrees on the machine with work not pushed.
 		request, err := require[wire.MachineRequest](params, "MachineRequest")
@@ -853,6 +868,8 @@ func (m *Methods) removeHost(ctx context.Context, host string, from Caller) (boo
 	_ = m.s.cfg.Store.Delete(ctx, projectFoldersKey(host))
 	// Its Agents versions (#5272).
 	_ = m.s.cfg.Store.Delete(ctx, machineVersionsKey(host))
+	// Its set-up (#5355).
+	_ = m.s.cfg.Store.Delete(ctx, machineSetupKey(host))
 	if m.s.providers != nil && m.s.providers.Kept() != nil {
 		m.s.providers.Kept().Forget(host)
 	}
@@ -885,6 +902,7 @@ func (m *Methods) hostRow(h records.MachineRecord) wire.ControlMachine {
 	m.mu.Unlock()
 	sort.Slice(row.GitAsks, func(i, j int) bool { return row.GitAsks[i].Server < row.GitAsks[j].Server })
 	row.Workspace = m.router.Workspace(h.ID)
+	row.Setup = m.s.machineSetup(context.Background(), h.ID)
 	if m.s.tunnels != nil {
 		row.Tunnel = m.s.tunnels.State(h.ID)
 	}
@@ -1238,6 +1256,13 @@ func (m *Methods) HostSaid(host, method string, params json.RawMessage) (any, er
 			m.s.userChanged(user, []wire.UserSettingsPartName{wire.UserSettingsPartNamePolicy}, false, host)
 		}
 		return map[string]any{}, nil
+	case wire.CallMachineSetupStep.Name:
+		// A step of the installer on the machine (#5355).
+		report, err := require[wire.MachineSetupReport](params, "MachineSetupReport")
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{}, m.s.setupStep(ctx, host, report)
 	case "machine/policyApplied":
 		applied, err := require[wire.PolicyApplied](params, "PolicyApplied")
 		if err != nil {

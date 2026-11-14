@@ -1900,6 +1900,114 @@
       ],
       "additionalProperties": false
     },
+    "MachineSetup": {
+      "type": "object",
+      "description": "How a machine's set-up stands (#5355, epic #5353): the eight steps in order, and when it began and was ready. Steps 5 and 6 may run together.",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MachineSetupStep"
+          }
+        },
+        "startedAt": {
+          "$ref": "core.schema.json#/definitions/WireDate"
+        },
+        "readyAt": {
+          "$ref": "core.schema.json#/definitions/WireDate"
+        }
+      },
+      "required": [
+        "steps",
+        "startedAt"
+      ],
+      "additionalProperties": false
+    },
+    "MachineSetupReport": {
+      "type": "object",
+      "description": "machine/setupStep: a step of the installer on the machine (agents-host install --join), as it starts, goes on and ends (#5355).",
+      "properties": {
+        "step": {
+          "$ref": "#/definitions/MachineSetupStepID"
+        },
+        "state": {
+          "$ref": "#/definitions/MachineSetupState"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "fromPool": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "step",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "MachineSetupState": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "running",
+        "needs-you",
+        "done",
+        "failed"
+      ]
+    },
+    "MachineSetupStep": {
+      "type": "object",
+      "description": "One step: detail is one line of what it is doing now or did; error is why it failed, in the words of the provider or the machine; fromPool says a warm pool did it before the machine was asked for; slower is true for a running step over 3 times its median (at least 2 minutes).",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/MachineSetupStepID"
+        },
+        "state": {
+          "$ref": "#/definitions/MachineSetupState"
+        },
+        "startedAt": {
+          "$ref": "core.schema.json#/definitions/WireDate"
+        },
+        "endedAt": {
+          "$ref": "core.schema.json#/definitions/WireDate"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "fromPool": {
+          "type": "boolean"
+        },
+        "slower": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "MachineSetupStepID": {
+      "type": "string",
+      "description": "The eight steps, in order: create machine, join machine, install Agents, compare digits, install runtimes, send projects, sign in to runtimes, smoke session.",
+      "enum": [
+        "create",
+        "join",
+        "install",
+        "compare",
+        "runtimes",
+        "projects",
+        "signIn",
+        "smoke"
+      ]
+    },
     "MachineStatus": {
       "type": "object",
       "description": "machine/status on channel 0 (#691 US4): each agent working or waiting on a person, and the next scheduled workflow.",
