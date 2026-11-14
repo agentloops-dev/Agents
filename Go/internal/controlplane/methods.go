@@ -182,6 +182,7 @@ var own = methodSet(
 	"scim/tokens/revoke",
 	"sealing/add",
 	"sealing/work",
+	"sessions/previewStart",
 	"signIn/addToMe",
 	"signIn/approve",
 	"signIn/configure",
@@ -403,6 +404,12 @@ func (m *Methods) Handle(method string, params json.RawMessage, from Caller) (an
 		return m.groupsMethod(ctx, method, params, from)
 	case "projects/list", "projects/set", "projects/remove", "projects/setSlot", "projects/setBoards", "projects/sessions":
 		return m.projectsMethod(ctx, method, params, from)
+	case wire.CallSessionsPreviewStart.Name:
+		request, err := require[wire.AutoMachineRequest](params, "AutoMachineRequest")
+		if err != nil {
+			return nil, err
+		}
+		return m.previewStart(ctx, request, from)
 	case "scim/set", "scim/tokens/list", "scim/tokens/make", "scim/tokens/revoke":
 		return m.scimMethod(ctx, method, params, from)
 	case "bots/make", "bots/setCaps", "bots/stopRun":
@@ -870,6 +877,7 @@ func (m *Methods) removeHost(ctx context.Context, host string, from Caller) (boo
 	_ = m.s.cfg.Store.Delete(ctx, machineVersionsKey(host))
 	// Its set-up (#5355).
 	_ = m.s.cfg.Store.Delete(ctx, machineSetupKey(host))
+	m.s.forgetCapacity(host)
 	if m.s.providers != nil && m.s.providers.Kept() != nil {
 		m.s.providers.Kept().Forget(host)
 	}
@@ -901,6 +909,10 @@ func (m *Methods) hostRow(h records.MachineRecord) wire.ControlMachine {
 	}
 	m.mu.Unlock()
 	sort.Slice(row.GitAsks, func(i, j int) bool { return row.GitAsks[i].Server < row.GitAsks[j].Server })
+	if n, ok := m.s.capacityOf(h.ID); ok {
+		level, at := n.level, wire.DateOf(n.at)
+		row.Capacity, row.LoadPerCore5, row.CapacityAt = &level, n.load5, &at
+	}
 	row.Workspace = m.router.Workspace(h.ID)
 	row.Setup = m.s.machineSetup(context.Background(), h.ID)
 	if m.s.tunnels != nil {
@@ -1206,6 +1218,13 @@ func (m *Methods) HostSaid(host, method string, params json.RawMessage) (any, er
 		}
 		// What this control plane can do, so the host asks only what it answers (#4100).
 		return wire.MachineHelloAnswer{Capabilities: capabilities()}, m.hello(ctx, host, hello)
+	case wire.CallMachineCapacity.Name:
+		report, err := require[wire.CapacityReport](params, "CapacityReport")
+		if err != nil {
+			return nil, err
+		}
+		m.s.noteCapacity(host, report, time.Now())
+		return wire.Empty{}, nil
 	case "folders/detected":
 		// Once: from now on its folders are the person's to add and remove (#429).
 		if record := m.records.Host(host); record != nil && record.DetectFolders != nil && *record.DetectFolders {

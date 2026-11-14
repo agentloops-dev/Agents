@@ -2798,6 +2798,27 @@
       }
     },
     {
+      "name": "machine/capacity",
+      "x-capability": "auto-machine/1",
+      "description": "A host, on its channel 0 (#5374): its capacity level and 5-minute load per core. Machines/list carries them in each machine's row.",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/machines.schema.json#/definitions/CapacityReport"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/core.schema.json#/definitions/Empty"
+        }
+      }
+    },
+    {
       "name": "machine/clients",
       "x-capability": "machine/1",
       "description": "To every host, on its channel 0, when it connects and when a window is paired or forgotten (#1118): the windows it may let in on its local socket.",
@@ -5921,6 +5942,32 @@
         "name": "result",
         "schema": {
           "$ref": "schema/reports.schema.json#/definitions/SealingWork"
+        }
+      }
+    },
+    {
+      "name": "sessions/previewStart",
+      "x-capability": "auto-machine/1",
+      "description": "Which machine Auto picks for a project and runtime, or why none fits (#5374, specs/5373-auto-machine). Advisory: a start with machine auto uses the same rule at start.",
+      "tags": [
+        {
+          "name": "web"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/machines.schema.json#/definitions/AutoMachineRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/machines.schema.json#/definitions/AutoMachinePick"
         }
       }
     },

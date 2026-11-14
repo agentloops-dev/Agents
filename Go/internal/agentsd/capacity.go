@@ -124,6 +124,8 @@ type capacityBook struct {
 	// higher target of them.
 	capBelow     int
 	capLastBelow wire.CapacityLevel
+	// What machine/capacity last told the control plane (#5374).
+	capSent capacitySent
 }
 
 // capacityLevel is the machine's level now: ok before the first look.
@@ -166,6 +168,7 @@ func (d *Daemon) checkCapacity(ctx context.Context) {
 	d.capLevel, d.capLastBelow, d.capBelow = level, lastBelow, below
 	d.capSample, d.capSampled = s, true
 	d.capMu.Unlock()
+	d.sendCapacitySoon(level, s.load5)
 	// The compute line is served one grant a look while the level is ok (#4579).
 	d.serveCapacityLine()
 	// While the machine is ok, each look lets the helper queues move (#4580).

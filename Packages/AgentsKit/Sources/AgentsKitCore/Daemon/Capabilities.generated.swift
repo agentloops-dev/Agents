@@ -18,6 +18,7 @@ public enum Capability {
     public static let attention1 = "attention/1"
     public static let attention2 = "attention/2"
     public static let auditSinks1 = "audit.sinks/1"
+    public static let autoMachine1 = "auto-machine/1"
     public static let auto1 = "auto/1"
     public static let backupsStore1 = "backups.store/1"
     public static let backups1 = "backups/1"
@@ -781,6 +782,7 @@ public enum Capability {
         "lock/joinReveal": "lock-join/1",
         "lock/reset": "lock-reset/1",
         "machine/accounts": "machine.accounts/2",
+        "machine/capacity": "auto-machine/1",
         "machine/hello": "machine/1",
         "machine/lockAdd": "host.lock/2",
         "machine/lockAgain": "host.lock/4",
@@ -904,6 +906,7 @@ public enum Capability {
         "scim/tokens/revoke": "org-identity/1",
         "sealing/add": "sealing/1",
         "sealing/work": "sealing/1",
+        "sessions/previewStart": "auto-machine/1",
         "signIn/addToMe": "signin/1",
         "signIn/approve": "signin/1",
         "signIn/ask": "signin.ask/1",

@@ -17,6 +17,7 @@ const CapArtifact1 = "artifact/1"
 const CapAttention1 = "attention/1"
 const CapAttention2 = "attention/2"
 const CapAuditSinks1 = "audit.sinks/1"
+const CapAutoMachine1 = "auto-machine/1"
 const CapAuto1 = "auto/1"
 const CapBackupsStore1 = "backups.store/1"
 const CapBackups1 = "backups/1"
@@ -843,6 +844,7 @@ var ControlCapabilities = pairs([][2]string{
 	{"lock/joinReveal", "lock-join/1"},
 	{"lock/reset", "lock-reset/1"},
 	{"machine/accounts", "machine.accounts/2"},
+	{"machine/capacity", "auto-machine/1"},
 	{"machine/hello", "machine/1"},
 	{"machine/lockAdd", "host.lock/2"},
 	{"machine/lockAgain", "host.lock/4"},
@@ -966,6 +968,7 @@ var ControlCapabilities = pairs([][2]string{
 	{"scim/tokens/revoke", "org-identity/1"},
 	{"sealing/add", "sealing/1"},
 	{"sealing/work", "sealing/1"},
+	{"sessions/previewStart", "auto-machine/1"},
 	{"signIn/addToMe", "signin/1"},
 	{"signIn/approve", "signin/1"},
 	{"signIn/ask", "signin.ask/1"},

@@ -47,6 +47,13 @@ var auditTarget = audit.Target
 // attachment's content too), are read on the goroutine that writes it (#2058). The
 // params are the message's own, decoded from its line, and never changed after.
 func (s *Service) audited(from Caller, host, method string, params json.RawMessage) {
+	if method == "agents/start" && host != "" {
+		person := from.Person
+		if person == "" {
+			person = s.PersonOf(from.Client)
+		}
+		go s.noteStarted(person, host, params)
+	}
 	action, ok := audit.Action(method, host != "")
 	if !ok || host == "" && (orgRoutesSelfAudited[method] || orgSelfAudited[method]) {
 		return

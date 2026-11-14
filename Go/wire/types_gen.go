@@ -1095,6 +1095,58 @@ const AutoFieldPermission AutoField = "permission"
 const AutoFieldPermissionRequests AutoField = "permissionRequests"
 const AutoFieldSandbox AutoField = "sandbox"
 
+// Why no machine fits: none has the project, none has the runtime installed and signed in, or every machine with the project is offline.
+type AutoMachineNone string
+
+const AutoMachineNoneNoFolder AutoMachineNone = "noFolder"
+const AutoMachineNoneNoRuntime AutoMachineNone = "noRuntime"
+const AutoMachineNoneOffline AutoMachineNone = "offline"
+
+// The answer of sessions/previewStart (#5374): the pick, or why none fits. The control plane makes the reason line; a client draws what it is given. The pick at start may differ if the state moved.
+type AutoMachinePick struct {
+	// The machine chosen; absent when none fits.
+	Machine *MachineRef `json:"machine,omitzero"`
+
+	MachineName *string `json:"machineName,omitzero"`
+
+	// The tier the pick came from.
+	Tier *CapacityLevel `json:"tier,omitzero"`
+
+	Reason *AutoMachineReason `json:"reason,omitzero"`
+
+	// Its 5-minute load per core, when known.
+	LoadPerCore *float64 `json:"loadPerCore,omitzero"`
+
+	// The commit the session's fresh worktree starts from. Set by the host at start; absent in a preview.
+	Commit *string `json:"commit,omitzero"`
+
+	// The one-line reason, "Auto chose Mac mini: you last started here.", or the none-fits sentence.
+	Text *string `json:"text,omitzero"`
+
+	// Set when no machine fits.
+	None *AutoMachineNone `json:"none,omitzero"`
+
+	// With none offline: the names of the offline machines that have the project.
+	Offline []string `json:"offline,omitzero"`
+
+	// True when the project has one machine only: no Auto row and no line, the machine is just shown.
+	Single *bool `json:"single,omitzero"`
+}
+
+// Why Auto chose: the person last started this project there, or it was the least loaded by 5-minute load per core.
+type AutoMachineReason string
+
+const AutoMachineReasonLastUsed AutoMachineReason = "lastUsed"
+const AutoMachineReasonLeastLoaded AutoMachineReason = "leastLoaded"
+
+// sessions/previewStart and a start with machine auto (#5374, specs/5373-auto-machine): which machine Auto would pick for a project and a runtime.
+type AutoMachineRequest struct {
+	// The project id.
+	Project string `json:"project"`
+
+	RuntimeID string `json:"runtimeID"`
+}
+
 // One cell of Settings ▸ Agent Runtimes ▸ Auto ▸ Mappings (#2658): what a level is on one runtime. native is absent when the runtime cannot honour the level.
 type AutoMapping struct {
 	RuntimeID string `json:"runtimeID"`
@@ -2227,6 +2279,13 @@ type CapacityLevel string
 const CapacityLevelOk CapacityLevel = "ok"
 const CapacityLevelNear CapacityLevel = "near"
 const CapacityLevelFull CapacityLevel = "full"
+
+// machine/capacity (#5374): a host tells the control plane its capacity level and 5-minute load per core, on connect and when either moves enough to matter.
+type CapacityReport struct {
+	Level CapacityLevel `json:"level"`
+
+	LoadPerCore5 *float64 `json:"loadPerCore5,omitzero"`
+}
 
 // capacity/state and capacity/changed (#4748): the machine's level, pushed when it moves, so a machine's row says it with no page open.
 type CapacityState struct {
@@ -3643,6 +3702,15 @@ type ControlMachine struct {
 
 	// The user who owns the machine (#994).
 	Owner *string `json:"owner,omitzero"`
+
+	// The machine's capacity level as it last pushed it (#4578, #5374). Absent from a host older than #4578 or before its first look: it counts as ok, last among the ok ones. It can be stale by the host's look interval (15 s) and the push; capacityAt says when it was heard.
+	Capacity *CapacityLevel `json:"capacity,omitzero"`
+
+	// Its 5-minute load per core when it last pushed (#5374).
+	LoadPerCore5 *float64 `json:"loadPerCore5,omitzero"`
+
+	// When the control plane last heard its capacity. A figure older than 2 minutes is never trusted by Auto (specs/5373-auto-machine).
+	CapacityAt *Date `json:"capacityAt,omitzero"`
 
 	// How its set-up stands, while it sets itself up and after (#5355). Absent for a machine that was not set up by the control plane.
 	Setup *MachineSetup `json:"setup,omitzero"`

@@ -281,6 +281,89 @@
       ],
       "additionalProperties": false
     },
+    "AutoMachineNone": {
+      "type": "string",
+      "enum": [
+        "noFolder",
+        "noRuntime",
+        "offline"
+      ],
+      "description": "Why no machine fits: none has the project, none has the runtime installed and signed in, or every machine with the project is offline."
+    },
+    "AutoMachinePick": {
+      "type": "object",
+      "description": "The answer of sessions/previewStart (#5374): the pick, or why none fits. The control plane makes the reason line; a client draws what it is given. The pick at start may differ if the state moved.",
+      "properties": {
+        "machine": {
+          "$ref": "#/definitions/MachineRef",
+          "description": "The machine chosen; absent when none fits."
+        },
+        "machineName": {
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "#/definitions/CapacityLevel",
+          "description": "The tier the pick came from."
+        },
+        "reason": {
+          "$ref": "#/definitions/AutoMachineReason"
+        },
+        "loadPerCore": {
+          "type": "number",
+          "description": "Its 5-minute load per core, when known."
+        },
+        "commit": {
+          "type": "string",
+          "description": "The commit the session's fresh worktree starts from. Set by the host at start; absent in a preview."
+        },
+        "text": {
+          "type": "string",
+          "description": "The one-line reason, \"Auto chose Mac mini: you last started here.\", or the none-fits sentence."
+        },
+        "none": {
+          "$ref": "#/definitions/AutoMachineNone",
+          "description": "Set when no machine fits."
+        },
+        "offline": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "With none offline: the names of the offline machines that have the project."
+        },
+        "single": {
+          "type": "boolean",
+          "description": "True when the project has one machine only: no Auto row and no line, the machine is just shown."
+        }
+      },
+      "additionalProperties": false
+    },
+    "AutoMachineReason": {
+      "type": "string",
+      "enum": [
+        "lastUsed",
+        "leastLoaded"
+      ],
+      "description": "Why Auto chose: the person last started this project there, or it was the least loaded by 5-minute load per core."
+    },
+    "AutoMachineRequest": {
+      "type": "object",
+      "description": "sessions/previewStart and a start with machine auto (#5374, specs/5373-auto-machine): which machine Auto would pick for a project and a runtime.",
+      "properties": {
+        "project": {
+          "type": "string",
+          "description": "The project id."
+        },
+        "runtimeID": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "project",
+        "runtimeID"
+      ],
+      "additionalProperties": false
+    },
     "Backup": {
       "type": "object",
       "properties": {
@@ -723,6 +806,22 @@
         "near",
         "full"
       ]
+    },
+    "CapacityReport": {
+      "type": "object",
+      "description": "machine/capacity (#5374): a host tells the control plane its capacity level and 5-minute load per core, on connect and when either moves enough to matter.",
+      "properties": {
+        "level": {
+          "$ref": "#/definitions/CapacityLevel"
+        },
+        "loadPerCore5": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "level"
+      ],
+      "additionalProperties": false
     },
     "CapacityState": {
       "type": "object",
