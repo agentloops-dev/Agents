@@ -3418,7 +3418,7 @@
       "type": "object",
       "description": "work/dismiss-lead (#5458): hide an epic from the suggestions until the epic changes or a lead of it ends. The list is the person's, kept on this machine.",
       "properties": {
-        "node": { "$ref": "forge.schema.json#/definitions/LineageNode" }
+        "node": { "$ref": "lineage.schema.json#/definitions/LineageNode" }
       },
       "required": ["node"],
       "additionalProperties": false
@@ -3531,7 +3531,7 @@
       "type": "object",
       "description": "An open epic with no lead, as work/suggest-leads says it (#5458, epic #5457). node, title and url are the epic's; folder is a folder on this machine on its repo; milestone is its name and due its due date (YYYY-MM-DD) where the forge says them. done and total are its children closed and all (0 and 0 for a standing epic, whose plan is a query). high says an open child has the label priority:high, and ui that an open child is a story (a person can see or use it: a client changes); the order says why. start is the new-agent form Start lead fills: the prompt, the labels #<n> and lead, and no worktree. It starts nothing.",
       "properties": {
-        "node": { "$ref": "forge.schema.json#/definitions/LineageNode" },
+        "node": { "$ref": "lineage.schema.json#/definitions/LineageNode" },
         "title": { "type": "string" },
         "url": { "type": "string" },
         "folder": { "type": "string" },
