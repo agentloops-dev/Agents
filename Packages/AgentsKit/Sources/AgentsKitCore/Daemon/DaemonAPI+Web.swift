@@ -524,7 +524,6 @@ public extension DaemonAPI {
                 Row(Method.hostsUnlink, params: MachineRequest.self, result: ControlMachine.self, kind: .controlRequest),
                 // Delete… on a machine's row in Machines (#3974).
                 Row(Method.hostsDeleteMachine, params: MachineRequest.self, result: Empty.self, kind: .controlRequest),
-                Row(Method.hostsRetrySetup, params: MachineRequest.self, result: Empty.self, kind: .controlRequest),
                 // Delete's question, Make Default and Check Again on a machine's row (#3979).
                 Row(Method.hostsCheckAgain, params: MachineRequest.self, result: Empty.self, kind: .controlRequest),
                 Row(Method.hostsDeletePreview, params: MachineRequest.self, result: StartedMachinePreview.self,
