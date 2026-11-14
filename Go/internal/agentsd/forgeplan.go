@@ -263,7 +263,35 @@ type featureItems struct {
 	epics, loose map[string][]wire.ForgeItem
 }
 
+// featuresRead is what forgeFeaturesRead gives, as the calls that share it get it.
+type featuresRead struct {
+	out   wire.ForgeFeatures
+	items featureItems
+}
+
+// forgeFeaturesRead is forge/features with the items it read. Calls for the same folder and board
+// at once share one read (#5450), so a client that asks forge/features to draw its rows and
+// work/features to fill them reads the forge once; what it gives is shared, so a caller copies a
+// slice before it adds to it. A caller whose ctx ends stops waiting; the read goes on for the others.
 func (d *Daemon) forgeFeaturesRead(ctx context.Context, r wire.ForgeFeaturesRequest) (wire.ForgeFeatures, featureItems, error) {
+	key := deref(r.Folder) + "\x00" + deref(r.Board)
+	got := d.featureReads.DoChan(key, func() (any, error) {
+		out, items, err := d.forgeFeaturesReadOnce(context.WithoutCancel(ctx), r)
+		return featuresRead{out, items}, err
+	})
+	select {
+	case <-ctx.Done():
+		return wire.ForgeFeatures{}, featureItems{}, ctx.Err()
+	case res := <-got:
+		if res.Err != nil {
+			return wire.ForgeFeatures{}, featureItems{}, res.Err
+		}
+		read := res.Val.(featuresRead)
+		return read.out, read.items, nil
+	}
+}
+
+func (d *Daemon) forgeFeaturesReadOnce(ctx context.Context, r wire.ForgeFeaturesRequest) (wire.ForgeFeatures, featureItems, error) {
 	out := wire.ForgeFeatures{Features: []wire.ForgeFeature{}}
 	items := featureItems{epics: map[string][]wire.ForgeItem{}, loose: map[string][]wire.ForgeItem{}}
 	by := map[string]*wire.ForgeFeature{}

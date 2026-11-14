@@ -1,7 +1,9 @@
 package agentsd
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -85,5 +87,52 @@ func TestWorkFeaturesGivesEpicsWithTheirPlans(t *testing.T) {
 	json.Unmarshal(c.call(t, 2, "work/features", wire.WorkFeaturesRequest{}), &out)
 	if gh.plans != plans+1 { // only #404, which is not cached
 		t.Fatalf("GitHub was asked for %d plans again", gh.plans-plans)
+	}
+}
+
+// #5450: forge/features and work/features asked at once, as the window asks them to draw its rows
+// first, read the forge's lists once between them; a caller that gives up stops waiting, and the
+// read goes on for the other.
+func TestFeaturesReadsAtOnceShareOneRead(t *testing.T) {
+	d, _, gh, _ := forgeDaemon(t)
+	gh.epics = []githubmcp.Item{planIssue(1, "open", "epic", "feature:work")}
+	gh.open = []githubmcp.Item{planIssue(5, "open", "bug", "feature:work")}
+	gh.hold = make(chan struct{})
+	gone, giveUp := context.WithCancel(context.Background())
+	quitter := make(chan error, 1)
+	go func() { _, _, err := d.forgeFeaturesRead(gone, wire.ForgeFeaturesRequest{}); quitter <- err }()
+	features := make(chan wire.ForgeFeatures, 1)
+	go func() { f, _ := d.forgeFeatures(context.Background(), wire.ForgeFeaturesRequest{}); features <- f }()
+	work := make(chan wire.WorkFeatures, 1)
+	go func() { w, _ := d.workFeatures(context.Background(), wire.WorkFeaturesRequest{}); work <- w }()
+	for deadline := time.Now().Add(5 * time.Second); ; {
+		if searches, _ := gh.asked(); len(searches) > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("no search")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	// Each call is in the read before the forge answers.
+	time.Sleep(100 * time.Millisecond)
+	giveUp()
+	if err := <-quitter; !errors.Is(err, context.Canceled) {
+		t.Fatalf("the caller that gave up: %v", err)
+	}
+	close(gh.hold)
+	f, w := <-features, <-work
+	if len(f.Features) != 1 || len(w.Features) != 1 || len(w.Features[0].Epics) != 1 || len(w.Features[0].Loose) != 1 {
+		t.Fatalf("features %+v, work %+v", f, w)
+	}
+	searches, _ := gh.asked()
+	epics := 0
+	for _, s := range searches {
+		if strings.Contains(s, `label:"epic"`) {
+			epics++
+		}
+	}
+	if epics != 1 {
+		t.Fatalf("epic lists %d, want 1: %q", epics, searches)
 	}
 }

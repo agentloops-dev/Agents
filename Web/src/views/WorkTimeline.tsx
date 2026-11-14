@@ -119,6 +119,10 @@ async function loadTimeline(store: Store) {
       if (fresh.length > 0) landed.value = new Set(fresh);
     }
     fromMachines = merged;
+    // The plot draws now, with the sessions it had (#5450); the new ones start their children when they come.
+    timeline.value = startedBySessions(merged, sessions.value);
+    plotAt.value = Date.now();
+    fromDevice.value = false;
     const on = await readSessions(store, merged);
     if (read !== key || fromMachines !== merged) return;
     sessions.value = on;

@@ -66,6 +66,8 @@ type fakeForgeGitHub struct {
 	// milestones are what Milestones gives, and milestoneReads how often it was asked (#4654).
 	milestones     []githubmcp.Milestone
 	milestoneReads int
+	// hold, when set, keeps every Search waiting until it is closed (#5450).
+	hold chan struct{}
 }
 
 func (f *fakeForgeGitHub) Milestones(context.Context, string) ([]githubmcp.Milestone, error) {
@@ -76,6 +78,12 @@ func (f *fakeForgeGitHub) Milestones(context.Context, string) ([]githubmcp.Miles
 }
 
 func (f *fakeForgeGitHub) Search(_ context.Context, repos []string, sf githubmcp.SearchFilter, after string, first int) (githubmcp.SearchPage, error) {
+	if f.hold != nil {
+		f.mu.Lock()
+		f.searches = append(f.searches, "held")
+		f.mu.Unlock()
+		<-f.hold
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.searches = append(f.searches, strings.Join(repos, ",")+" "+githubmcp.SearchQuery(repos, sf)+" after="+after)

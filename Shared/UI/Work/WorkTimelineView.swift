@@ -109,9 +109,8 @@ final class WorkTimelineState {
             plotRead = at
             fromDevice = true
         }
-        let found = await model.workBoards()
-        guard ask == mine else { return }
-        boards = found
+        // The boards beside the timeline, not before it (#5450).
+        async let found = model.workBoards()
         let on = Set(project.folders.map { String($0.prefix { $0 != "|" }) })
         let machines = model.timelineMachines.filter { on.contains($0.id.rawValue) }
         let content = content
@@ -136,6 +135,10 @@ final class WorkTimelineState {
                 }
             }
             fromMachines = merged
+            // The plot draws now, with the sessions it had (#5450); the new ones start their children when they come.
+            timeline = WorkTimeline.started(merged, by: sessions)
+            plotRead = Date()
+            fromDevice = false
             let on = await model.lineageSessionsOn(WorkTimeline.sessionNodes(merged))?.sessions ?? []
             guard ask == mine, fromMachines == merged else { return }
             sessions = on
@@ -180,7 +183,9 @@ final class WorkTimelineState {
                 if ask == mine, answered < machines.count, t != nil { await draw(all: false) }
             }
         }
+        let boardsFound = await found
         guard ask == mine else { return }
+        boards = boardsFound
         await draw(all: true)
     }
 
