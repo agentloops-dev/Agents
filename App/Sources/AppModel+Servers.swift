@@ -256,6 +256,11 @@ extension AppModel {
         await machineCall(DaemonAPI.Method.hostsDeleteMachine, host)
     }
 
+    /// Try Again on a machine's set-up (#5357): runs the failed step and the ones after it.
+    func retrySetup(_ host: MachineRef) async {
+        await machineCall(DaemonAPI.Method.hostsRetrySetup, host)
+    }
+
     /// Remove… on a registered machine (#3973): Agents forgets it; the computer stays.
     func removeMachine(_ host: MachineRef) async {
         await machineCall(DaemonAPI.Method.hostsRemove, host)

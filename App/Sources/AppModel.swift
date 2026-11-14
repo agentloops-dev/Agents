@@ -3630,7 +3630,10 @@ final class AppModel {
         // `.mac` is `client`, already. Every other host, including another machine's
         // home host, gets a client of its own on the same link.
         let others = listed.filter { $0.id != .mac }
-        hosts.controlled = Dictionary(uniqueKeysWithValues: others.map { ($0.id, (label: $0.name, online: $0.answers)) })
+        // A machine that is still setting itself up takes no session until step 8 passes (#5357).
+        hosts.controlled = Dictionary(uniqueKeysWithValues: others.map {
+            ($0.id, (label: $0.name, online: $0.answers && !MachineSetupWords.isSettingUp($0.setup)))
+        })
         hosts.controlRows = Dictionary(uniqueKeysWithValues: others.map { ($0.id, $0) })
         for host in others where host.answers {
             await reach(host, through: controlLink)
