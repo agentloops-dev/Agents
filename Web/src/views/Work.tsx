@@ -49,6 +49,8 @@ import { WorkDocs } from "./Docs";
 import { hasPlan, leadStart, leadWords, planSessions } from "../model/epicPlan";
 import { epicLead } from "../model/workFeatures";
 import { go, replace, route, routeHash } from "../route";
+import { type TrailTarget, trailHelp, workTrail } from "../model/workTrail";
+import { revealFeature } from "./WorkFeatures";
 import {
   allRows, askKey, boardHosts, boards, forgeHosts, fromList, hasMore, listProjects, loadBoards, loadList, loadMore, nextAfter, pageNeighbours,
   placeKey, shownRows, workList,
@@ -488,6 +490,7 @@ export function WorkPage({ store, kind, ref }: { store: Store; kind: WorkKind; r
 
   const got = detail.value?.got;
   const item = got?.item;
+  const trail = workTrail(kind, ref, item?.feature, item?.parent);
   // The row the page was opened from, while the read runs: its title, number and state show at once.
   const row = !item && fromForge(kind) ? allRows(workList(kind)).find((r) => r.node.ref === ref) : undefined;
   const title = item?.title ?? row?.title ?? (fromForge(kind) ? undefined : nodeName(node));
@@ -586,14 +589,29 @@ export function WorkPage({ store, kind, ref }: { store: Store; kind: WorkKind; r
     <article class={`work-page work-item-page${loading ? " loading" : ""}`} aria-busy={loading}>
       <div class="work-item-grid">
       <div class="work-page-bar">
-        {/* The place (note 1): Issues / #4331, Issues a link to the list as it was; the browser's Back and Forward are
-            the page's. On a 390 px page: ‹ Issues. */}
+        {/* The place (note 1), the page's trail (#5452): Issues / #4331, or Features / Work / Epic #5448 / #5452 for an
+            issue in a feature's epic, each part a link to its place (a list as it was, Features with the feature open, the
+            epic's page); the browser's Back and Forward are the page's. On a 390 px page, the nearest part alone: ‹ Issues. */}
         <nav class="work-place" aria-label="Place">
-          <a href={routeHash({ nav: "work", section: kind })} title={`All ${workKindTitle[kind].toLowerCase()}`}
-            onClick={(e) => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); go({ nav: "work", section: kind }); }}>
-            <Icon name="chevron-left" class="back" />{workKindTitle[kind]}</a>
-          <span class="sep" aria-hidden="true">/</span>
-          <span class="here">{shortRef(ref)}</span>
+          {trail.map((part, i) => {
+            const target = part.target;
+            const near = i === trail.length - 2;
+            if (!target) return <span key={i} class="here">{part.words}</span>;
+            const to = trailRoute(target);
+            return (
+              <Fragment key={i}>
+                <a class={near ? undefined : "far"} href={routeHash(to)} title={trailHelp(part)}
+                  onClick={(e) => {
+                    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                    e.preventDefault();
+                    if (target.kind === "feature") revealFeature(target.name);
+                    go(to);
+                  }}>
+                  {near && <Icon name="chevron-left" class="back" />}{part.words}</a>
+                <span class={`sep${near ? "" : " far"}`} aria-hidden="true">/</span>
+              </Fragment>
+            );
+          })}
         </nav>
         <Stepper store={store} kind={kind} at={ref} />
         {url && <a class="work-open-icon" href={url} target="_blank" rel="noopener noreferrer" title={openOn} aria-label={openOn}><OpenGlyph /></a>}
@@ -961,4 +979,11 @@ export function Stepper({ store, kind, at }: { store: Store; kind: WorkKind; at:
         {l.more.value ? "…" : "↓"}</button>
     </span>
   );
+}
+
+/** Where a part of a page's trail goes (#5452): a list, Features (with the feature open), or the epic's page. */
+function trailRoute(t: TrailTarget) {
+  if (t.kind === "list") return { nav: "work", section: t.section } as const;
+  if (t.kind === "feature") return { nav: "work", section: "features" } as const;
+  return { nav: "work", section: t.section, item: t.ref } as const;
 }

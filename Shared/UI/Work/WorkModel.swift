@@ -181,6 +181,20 @@ extension WorkModel {
         list.opened = to
         workHistory.replace(WorkPlace(kind: place.kind, ref: to, fromList: true))
     }
+
+    /// Open a part of a page's trail (#5452): a list, Work ▸ Features with a feature open and in
+    /// view, or an epic's page. Each is a new place, so Back comes back to the page.
+    func openTrail(_ target: WorkTrail.Target) {
+        switch target {
+        case .list(let kind):
+            showWork(WorkPlace(kind: kind))
+        case .feature(let name):
+            workLists.features.reveal(name, model: self)
+            showWork(WorkPlace(kind: .feature))
+        case .item(let kind, let ref):
+            showWork(WorkPlace(kind: kind, ref: ref))
+        }
+    }
 }
 
 extension View {

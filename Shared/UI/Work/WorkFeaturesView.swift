@@ -211,6 +211,16 @@ final class WorkFeaturesState {
         if open, items[key] == nil { await readItems(name, model: model) }
     }
 
+    /// The feature a page's trail opened (#5452), by name in lower case, until the list has
+    /// opened its group and scrolled to it.
+    var revealing: String?
+
+    /// Open a feature from a page's trail: open, its group too, and scrolled to (#5452).
+    func reveal(_ name: String, model: any WorkModel) {
+        revealing = name.lowercased()
+        Task { await setOpen(name, true, model: model) }
+    }
+
     /// An open feature's open issues from the older machines, each ref once, with what the others
     /// gave it; then its epics' plans.
     private func readItems(_ name: String, model: any WorkModel) async {
@@ -421,6 +431,26 @@ struct WorkFeaturesPane: View {
     }
 
     private func list(_ features: [DaemonAPI.ForgeFeature]) -> some View {
+        ScrollViewReader { scroller in
+            listRows(features)
+                // A page's trail opened a feature (#5452): open its group, then scroll to it.
+                .task(id: state.revealing) { reveal(in: features, scroller) }
+        }
+    }
+
+    /// The feature a page's trail asked for: its group open and its row in view, once.
+    private func reveal(in features: [DaemonAPI.ForgeFeature], _ scroller: ScrollViewProxy) {
+        guard let name = state.revealing else { return }
+        state.revealing = nil
+        let groups = WorkFeatures.groups(features, agents: model.workAgents, approvals: state.approvals)
+        guard let entry = groups.first(where: { $0.features.contains { $0.name.lowercased() == name } }) else { return }
+        state.groupOpen[entry.group] = true
+        Task { @MainActor in scroller.scrollTo(Self.rowID(name), anchor: .top) }
+    }
+
+    private static func rowID(_ name: String) -> String { "feature:" + name.lowercased() }
+
+    private func listRows(_ features: [DaemonAPI.ForgeFeature]) -> some View {
         List {
             if state.fromDevice {
                 WorkFromDeviceStrip(read: state.fromDeviceRead).listRowSeparator(.hidden)
@@ -456,6 +486,7 @@ struct WorkFeaturesPane: View {
     private func feature(_ feature: DaemonAPI.ForgeFeature, open: Bool, sessions: Int?, idle: Bool, needs: String?) -> some View {
         let shown = state.items[feature.name.lowercased()].map(WorkFeatures.opened)
         featureRow(feature, open: open, shown: shown, sessions: sessions, idle: idle, needs: needs)
+            .id(Self.rowID(feature.name))
         if open {
             opened(feature, shown: shown)
         }

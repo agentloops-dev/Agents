@@ -151,7 +151,7 @@
    line; Start Agent full width; the avatar in each box's header, so the box takes the width. */
 @container (max-width: 699px) {
   .work-place .back { display: inline; }
-  .work-place .sep { display: none; }
+  .work-place .sep, .work-place .far { display: none; }
   .work-stepper .wide-line, .work-page-byline .wide-line, .work-open-on, .wide-only { display: none; }
   .work-stepper .short-line, .work-page-byline .short-line { display: inline; }
   .work-open-icon { display: inline-grid; }

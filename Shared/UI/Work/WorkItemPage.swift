@@ -154,22 +154,13 @@ struct WorkItemPage: View {
     // MARK: Toolbar (Mac)
 
     #if os(macOS)
-    /// The place, *Issues › #4331* (Issues opens the list), then Previous and Next and Refresh at
-    /// the toolbar's end, as the list has Refresh (#4400 notes 1 to 3).
+    /// The place, *Issues › #4331* (Issues opens the list), or the trail through the feature and
+    /// the epic, *Features › Work › Epic #5448 › #5452* (#5452), then Previous and Next and Refresh
+    /// at the toolbar's end, as the list has Refresh (#4400 notes 1 to 3).
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .navigation) {
-            HStack(spacing: 4) {
-                Button(place.kind.title) { model.showWork(WorkPlace(kind: place.kind)) }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .help("All \(place.kind.title.lowercased())")
-                Image(icon: "chevron.compact.right").foregroundStyle(.tertiary).accessibilityHidden(true)
-                Text(WorkList.shortRef(node.ref)).fontWeight(.semibold).monospacedDigit()
-            }
-            .appText(.reading)
-            .lineLimit(1)
-            .fixedSize()
+            WorkTrailView(model: model, parts: trail).fixedSize()
         }
         // With no title in the toolbar, they would follow the place: the spacer keeps them at its end.
         ToolbarSpacer(.flexible)
@@ -226,6 +217,24 @@ struct WorkItemPage: View {
     }
     #endif
 
+    /// The page's trail (#5452): through its feature and its epic once the item is read.
+    private var trail: [WorkTrail.Part] {
+        WorkTrail.parts(kind: place.kind, ref: node.ref, feature: item?.feature, parent: item?.parent)
+    }
+
+    #if os(iOS)
+    /// The Remote's trail, a line above the title (#5452): the whole of it on an iPad, and the
+    /// page and the part above it on a phone, by its width. None for a page in no feature or
+    /// epic: the bar's ‹ Issues says it all.
+    @ViewBuilder
+    private var trailLine: some View {
+        let parts = compact ? WorkTrail.short(trail) : trail
+        if trail.count > 2 {
+            WorkTrailView(model: model, parts: parts)
+        }
+    }
+    #endif
+
     private var forgeURL: URL? { item?.url.flatMap(URL.init(string:)) ?? row?.url ?? WorkList.url(node) }
 
     // MARK: Header
@@ -233,6 +242,9 @@ struct WorkItemPage: View {
     private var header: some View {
         let title = item?.title ?? row?.title
         return VStack(alignment: .leading, spacing: 8) {
+            #if os(iOS)
+            trailLine
+            #endif
             if narrow {
                 titleLine(title)
                 stateLine

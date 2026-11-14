@@ -165,6 +165,16 @@ function readPlans(store: Store, epics: readonly { host: string; item: ForgeItem
   }
 }
 
+/** The feature a page's trail opened (#5452), in lower case, until its group is open and its row scrolled to. */
+const revealing = signal<string | undefined>(undefined);
+
+/** Open a feature from a page's trail (#5452): open, its group too, and scrolled to when the list draws it. */
+export function revealFeature(name: string) {
+  const key = name.toLowerCase();
+  featureOpen.value = { ...featureOpen.value, [key]: true };
+  revealing.value = key;
+}
+
 function toggle(name: string, isOpen: boolean) {
   featureOpen.value = { ...featureOpen.value, [name.toLowerCase()]: !isOpen };
 }
@@ -217,6 +227,15 @@ function FeatureGroups({ store, list }: { store: Store; list: ForgeFeature[] }) 
   const groups = featureGroups(list, agents, approvals.value);
   const present = groups.map((g) => g.group);
   const waiting = new Set(approvals.value.map((r) => `P${shortRef(r)}`));
+  // A page's trail opened a feature (#5452): its group opens, then its row scrolls into view, once.
+  const asked = revealing.value;
+  const askedGroup = asked ? groups.find((g) => g.features.some((f) => f.name.toLowerCase() === asked))?.group : undefined;
+  useEffect(() => {
+    if (!asked || !askedGroup) return;
+    revealing.value = undefined;
+    groupOpen.value = { ...groupOpen.peek(), [askedGroup]: true };
+    requestAnimationFrame(() => document.querySelector(`[data-feature="${CSS.escape(asked)}"]`)?.scrollIntoView({ block: "start" }));
+  }, [asked, askedGroup]);
   return (
     <>
       {groups.map(({ group, features: shown }) => {
@@ -286,7 +305,7 @@ function FeatureRow({ store, feature, agents, group, approvals: waiting, startOp
   if (group === "idle") { const u = updatedWords(feature); if (u) line2.push(u); }
   const legacy = delivery === undefined || delivery.total === 0 ? epicsDone(feature) : undefined;
   return (
-    <li>
+    <li data-feature={key}>
       <button type="button" class="work-feature-head" aria-expanded={isOpen} onClick={() => toggle(feature.name, isOpen)}
         title={isOpen ? `Fold ${feature.name}` : `Show ${feature.name}'s epics in flight`}>
         <Icon name={isOpen ? "chevron-down" : "chevron-right"} class="chevron" />
