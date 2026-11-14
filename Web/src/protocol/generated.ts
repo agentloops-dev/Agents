@@ -15855,7 +15855,6 @@ export interface Methods {
   "machines/listKept": { params: Empty; result: KeptList };
   "machines/remove": { params: MachineRequest; result: Empty };
   "machines/retryKept": { params: KeptRequestID; result: Empty };
-  "machines/retrySetup": { params: MachineRequest; result: Empty };
   "machines/setMachineOptions": { params: MachineOptions; result: ControlMachine };
   "machines/start": { params: MachineRequest; result: ControlMachine };
   "machines/startEnroll": { params: MachineEnroll; result: ControlCodeShown };
@@ -16306,7 +16305,6 @@ export const MethodTarget = {
   "machines/listKept": "control",
   "machines/remove": "control",
   "machines/retryKept": "control",
-  "machines/retrySetup": "control",
   "machines/setMachineOptions": "control",
   "machines/start": "control",
   "machines/startEnroll": "control",

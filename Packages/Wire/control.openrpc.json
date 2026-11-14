@@ -3920,11 +3920,6 @@
       "name": "machines/retrySetup",
       "x-capability": "machines/1",
       "description": "Try Again on a machine's set-up (#5355): runs the failed step and the ones after it. Every step is safe to run again.",
-      "tags": [
-        {
-          "name": "web"
-        }
-      ],
       "paramStructure": "by-name",
       "params": [
         {
