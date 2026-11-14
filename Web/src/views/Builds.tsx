@@ -36,7 +36,7 @@ interface Read { from: BuildsFrom; history: BuildsHistory; last?: BuildsHistory 
 
 export function BuildsPage({ store, down }: { store: Store; down: boolean }) {
   const ask = parseBuildsQuery(route.value.query);
-  const hosts = store.hosts.value.filter((h) => hostAnswers(h.state) && store.has(h.id, Capability.buildsTrends1)).map((h) => h.id);
+  const hosts = store.hosts.value.filter((h) => hostAnswers(h.state) && store.has(h.id, Capability.buildsTrends2)).map((h) => h.id);
   const mac = store.macHostID.value;
   // This Mac first, so a tie goes to it.
   hosts.sort((a, b) => Number(b === mac) - Number(a === mac));

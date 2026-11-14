@@ -26,8 +26,8 @@ public enum Capability {
     public static let browser1 = "browser/1"
     public static let browser2 = "browser/2"
     public static let buildsCopy1 = "builds.copy/1"
-    public static let buildsRead1 = "builds.read/1"
-    public static let buildsTrends1 = "builds.trends/1"
+    public static let buildsRead2 = "builds.read/2"
+    public static let buildsTrends2 = "builds.trends/2"
     public static let capacity1 = "capacity/1"
     public static let catalog1 = "catalog/1"
     public static let changesUndo1 = "changes.undo/1"
@@ -123,6 +123,7 @@ public enum Capability {
     public static let lineageForecast1 = "lineage.forecast/1"
     public static let lineageGraph1 = "lineage.graph/1"
     public static let lineageRead1 = "lineage.read/1"
+    public static let lineageRead2 = "lineage.read/2"
     public static let lineageSessions1 = "lineage.sessions/1"
     public static let lineage1 = "lineage/1"
     public static let links1 = "links/1"
@@ -176,12 +177,14 @@ public enum Capability {
     public static let providers2 = "providers/2"
     public static let readapi1 = "readapi/1"
     public static let relay1 = "relay/1"
-    public static let reportsNodes1 = "reports.nodes/1"
+    public static let reportsNodes2 = "reports.nodes/2"
     public static let reportsProblem1 = "reports.problem/1"
     public static let reportsScope1 = "reports.scope/1"
-    public static let reportsValue1 = "reports.value/1"
+    public static let reportsValue2 = "reports.value/2"
     public static let reportsViews1 = "reports.views/1"
+    public static let reportsViews2 = "reports.views/2"
     public static let reports1 = "reports/1"
+    public static let reports2 = "reports/2"
     public static let requestsDefer1 = "requests.defer/1"
     public static let requests1 = "requests/1"
     public static let resourcesLeases1 = "resources.leases/1"
@@ -305,8 +308,8 @@ public enum Capability {
         "browser/watch": "browser/1",
         "browserControl/set": "host.drive-approval/1",
         "browserControl/state": "host.drive-approval/1",
-        "builds/history": "builds.trends/1",
-        "builds/run": "builds.trends/1",
+        "builds/history": "builds.trends/2",
+        "builds/run": "builds.trends/2",
         "capacity/state": "capacity/1",
         "catalog/destination-state": "catalog/1",
         "catalog/preview": "catalog/1",
@@ -714,8 +717,8 @@ public enum Capability {
         "bots/make": "bots/1",
         "bots/setCaps": "bots/1",
         "bots/stopRun": "bots/1",
-        "builds/historyAll": "builds.read/1",
-        "builds/runAll": "builds.read/1",
+        "builds/historyAll": "builds.read/2",
+        "builds/runAll": "builds.read/2",
         "builds/sync": "builds.copy/1",
         "bus/lease": "events.leases/1",
         "bus/log": "events.bus/1",
@@ -763,9 +766,9 @@ public enum Capability {
         "groups/set": "groups/1",
         "groups/setRole": "org-identity/1",
         "handover/status": "handover/1",
-        "lineage/sessionsOn": "lineage.read/1",
+        "lineage/sessionsOn": "lineage.read/2",
         "lineage/sync": "lineage.graph/1",
-        "lineage/walkAll": "lineage.read/1",
+        "lineage/walkAll": "lineage.read/2",
         "links/approve": "links/1",
         "links/check": "links/1",
         "links/deny": "links/1",
@@ -889,14 +892,14 @@ public enum Capability {
         "readApi/make": "readapi/1",
         "readApi/revoke": "readapi/1",
         "reports/deleteView": "reports.views/1",
-        "reports/export": "reports/1",
-        "reports/nodes": "reports.nodes/1",
+        "reports/export": "reports/2",
+        "reports/nodes": "reports.nodes/2",
         "reports/policy": "reports.scope/1",
-        "reports/saveView": "reports.views/1",
+        "reports/saveView": "reports.views/2",
         "reports/scopes": "reports.scope/1",
         "reports/setPolicy": "reports.scope/1",
-        "reports/usage": "reports/1",
-        "reports/value": "reports.value/1",
+        "reports/usage": "reports/2",
+        "reports/value": "reports.value/2",
         "reports/views": "reports.views/1",
         "scim/set": "org-identity/1",
         "scim/tokens/list": "org-identity/1",

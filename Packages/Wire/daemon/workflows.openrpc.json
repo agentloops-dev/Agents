@@ -8,7 +8,7 @@
   "methods": [
     {
       "name": "builds/history",
-      "x-capability": "builds.trends/1",
+      "x-capability": "builds.trends/2",
       "tags": [
         {
           "name": "web"
@@ -33,7 +33,7 @@
     },
     {
       "name": "builds/run",
-      "x-capability": "builds.trends/1",
+      "x-capability": "builds.trends/2",
       "tags": [
         {
           "name": "web"

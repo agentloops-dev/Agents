@@ -45,6 +45,7 @@ export function scopeNote(scope: ReportScope, groupName?: string): string {
     case "me": return "Your machines.";
     case "org": return "Everyone’s machines.";
     case "group": return `The machines of ${groupName ?? "the group"}’s people.`;
+    case "project": return "The project’s folders, on every machine.";
   }
 }
 export const utcNote = "Hours and days are UTC, so machines in other time zones add up.";
@@ -145,7 +146,7 @@ export function exportName(range: ReportRange, format: ReportFormat, now: Date =
 
 /** What a scope is called in a picker's value: "me", "org" or "group:<id>". */
 export function scopeKey(scope: ReportScope): string {
-  return scope.kind === "group" ? `group:${scope.group ?? ""}` : scope.kind;
+  return scope.kind === "group" ? `group:${scope.group ?? ""}` : scope.kind === "project" ? `project:${scope.project ?? ""}` : scope.kind;
 }
 
 /** The ways to add a report up: with nobody named, neither person nor machine; past Me, by group too. */
