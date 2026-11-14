@@ -34,5 +34,12 @@
       "mac.callsBeforeFirstList": 2,
       "remote.callsBeforeFirstList": 4
     }
+  },
+  "scale": {
+    "_about": "Budgets at 1,000 fake machines (#5282, epic #5281; scripts/scale-fixture.sh). Each child of the epic proves its part against them.",
+    "machines/list, limit 50, ms": 50,
+    "web.callsPerRefresh": "a fixed count, the same at 1 and at 1,000 machines",
+    "sidebar.machineRows": 7,
+    "sidebar.allMachinesRows": 1
   }
 }
