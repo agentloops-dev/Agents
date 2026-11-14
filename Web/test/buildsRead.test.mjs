@@ -17,8 +17,8 @@ function fake(capabilities) {
 
 const ask = { repo: "github:alexec/agents", from: 0, to: 1 };
 
-test("with builds.read/1 the page reads the control plane's copy, of the person's own machines", async () => {
-  const { store, calls } = fake(["builds.read/1"]);
+test("with builds.read/2 the page reads the control plane's copy, of the person's own machines", async () => {
+  const { store, calls } = fake(["builds.read/2"]);
   assert.equal(r.planeReadsBuilds(store), true);
   await r.readHistory(store, ask, null);
   await r.readRun(store, { repo: ask.repo, ref: "github:run:alexec/agents#1" }, null);
