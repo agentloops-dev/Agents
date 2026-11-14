@@ -6627,6 +6627,28 @@ type KeptDelivered struct {
 
 type KeptList struct {
 	Kept []KeptRequest `json:"kept"`
+
+	// The cursor of the next page; absent on the last (#5283).
+	Next *string `json:"next,omitzero"`
+
+	// For each kind, how many kept requests match the other filters (#5283).
+	Counts *KeptListCounts `json:"counts,omitzero"`
+}
+
+// For each kind, how many kept requests match the other filters (#5283).
+type KeptListCounts struct {
+	Kind map[string]int64 `json:"kind"`
+}
+
+// machines/listKept (#5283): optional. `query` matches the text, kind or machine; `kind` one kind; `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.
+type KeptListQuery struct {
+	Query *string `json:"query,omitzero"`
+
+	Kind *string `json:"kind,omitzero"`
+
+	Limit *int64 `json:"limit,omitzero"`
+
+	Cursor *string `json:"cursor,omitzero"`
 }
 
 type KeptRequest struct {
@@ -8618,6 +8640,19 @@ type MachineClients struct {
 	User *string `json:"user,omitzero"`
 }
 
+// For each filter, how many machines have each of its values, among those every other filter lets through (so a chip says what picking it would show). A machine with no value for a filter is not counted in it.
+type MachineCounts struct {
+	State map[string]int64 `json:"state"`
+
+	Labels map[string]int64 `json:"labels"`
+
+	Provider map[string]int64 `json:"provider"`
+
+	Os map[string]int64 `json:"os"`
+
+	Version map[string]int64 `json:"version"`
+}
+
 // machines/startEnroll (#1761): with as, a bot's machine code, an admin's only. Without, the caller's own, as before.
 type MachineEnroll struct {
 	As *string `json:"as,omitzero"`
@@ -8798,6 +8833,38 @@ type MachineLink struct {
 	StopWhenIdleMinutes *int64 `json:"stopWhenIdleMinutes,omitzero"`
 
 	Trust *string `json:"trust,omitzero"`
+}
+
+// machines/list (#5283) when it was given a query: a page of machines, the cursor of the next page (absent on the last), how many match in all, and the counts for each filter's values.
+type MachineList struct {
+	Machines []ControlMachine `json:"machines"`
+
+	Next *string `json:"next,omitzero"`
+
+	Total int64 `json:"total"`
+
+	Counts MachineCounts `json:"counts"`
+}
+
+// machines/list (#5283): what to show, as the Machines page asks for it. Every field is optional; with none, the answer is the plain array of up to 200 machines, as before. `query` matches a name, id or label, any case. `state`, `provider`, `os` and `version` each match one value; `labels` matches a machine that has every one. `sort` is name (the default), state, lastSeen (latest first) or version. `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.
+type MachineListQuery struct {
+	Query *string `json:"query,omitzero"`
+
+	State *string `json:"state,omitzero"`
+
+	Labels []string `json:"labels,omitzero"`
+
+	Provider *string `json:"provider,omitzero"`
+
+	Os *string `json:"os,omitzero"`
+
+	Version *string `json:"version,omitzero"`
+
+	Sort *string `json:"sort,omitzero"`
+
+	Limit *int64 `json:"limit,omitzero"`
+
+	Cursor *string `json:"cursor,omitzero"`
 }
 
 // machines/setMachineOptions. stopWhenIdleMinutes 0 turns it off.

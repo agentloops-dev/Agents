@@ -1749,11 +1749,50 @@
           "items": {
             "$ref": "#/definitions/KeptRequest"
           }
+        },
+        "next": {
+          "type": "string",
+          "description": "The cursor of the next page; absent on the last (#5283)."
+        },
+        "counts": {
+          "type": "object",
+          "description": "For each kind, how many kept requests match the other filters (#5283).",
+          "properties": {
+            "kind": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer"
+              }
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
         "kept"
       ],
+      "additionalProperties": false
+    },
+    "KeptListQuery": {
+      "type": "object",
+      "description": "machines/listKept (#5283): optional. `query` matches the text, kind or machine; `kind` one kind; `limit` is 1 to 200 (default 200); `cursor` is the previous answer's `next`.",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
       "additionalProperties": false
     },
     "KeptRequest": {

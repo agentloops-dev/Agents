@@ -138,6 +138,7 @@ public enum Capability {
     public static let machineUsage1 = "machine.usage/1"
     public static let machine1 = "machine/1"
     public static let machines1 = "machines/1"
+    public static let machines2 = "machines/2"
     public static let mailbox1 = "mailbox/1"
     public static let marketplaces1 = "marketplaces/1"
     public static let mcpToolLevels1 = "mcp.tool-levels/1"
@@ -823,8 +824,8 @@ public enum Capability {
         "machines/lendGit": "machines/1",
         "machines/lendSignIn": "machines/1",
         "machines/link": "machines/1",
-        "machines/list": "machines/1",
-        "machines/listKept": "machines/1",
+        "machines/list": "machines/2",
+        "machines/listKept": "machines/2",
         "machines/projectFolders": "sessions.project/1",
         "machines/projectSessions": "sessions.project/1",
         "machines/remove": "machines/1",
