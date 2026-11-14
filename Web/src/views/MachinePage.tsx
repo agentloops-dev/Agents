@@ -17,6 +17,7 @@ import { go } from "../route";
 import { MachineProcesses } from "./settings/Processes";
 import { chooseSettingsMachine } from "./settings/SettingsMachine";
 import { WorktreesList } from "./Worktrees";
+import { MachineSessionsSection } from "./MachineSessions";
 import { MachineAgents } from "./MachineAgents";
 import { LastUpdate } from "./LastUpdate";
 import { Resources } from "./Resources";
@@ -76,6 +77,7 @@ export function MachinePage({ store, host }: { store: Store; host: string }) {
         <button type="button" title={`${name}’s sleep, backups and desktop control, in Settings`}
           onClick={() => { chooseSettingsMachine(host); go({ nav: "settings" }); }}>Settings…</button>
       </div>
+      <MachineSessionsSection store={store} host={host} name={name} online={answers} />
       {!answers ? <p class="hint">{name} is offline, so it can’t say how it is doing now.</p>
         : !asks ? <p class="hint">Update Agent Loops on {name} to see its CPU, memory and disks here.</p>
         : (

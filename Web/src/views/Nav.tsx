@@ -30,6 +30,7 @@ import { WorkDeploysPage } from "./WorkDeploysPage";
 import { DocPage, DocsList } from "./Docs";
 import { ConversationPage, MessagesList } from "./Messages";
 import { MachinePage } from "./MachinePage";
+import { machineSessions, runningLineOf } from "../model/machineSessions";
 import { machineNeed, machineNeedLine } from "./OfflineStrip";
 import { MachineRow, MakingRow } from "./MachineRow";
 import { deleteMakingQuestion, joinTrustQuestion, type MachineMaking, makingRows, newMachineItems } from "../model/machineRow";
@@ -173,9 +174,13 @@ function MachineNeedLine({ store, host }: { store: Store; host: string }) {
   const row = store.hosts.value.find((h) => h.id === host);
   const need = row ? machineNeed(row, store.hostIsOnline(host), store.runtimes.value[host] ?? [],
     store.disk.value[host]?.alarms ?? [], store.capacity.value[host]?.level) : null;
-  if (!row || !need) return null;
+  if (!row) return null;
+  // Nothing wrong: how many sessions run on it, or Idle (#5490), from the count the machine's page reads.
+  const words = need ? machineNeedLine(need, row)
+    : store.hostIsOnline(host) ? runningLineOf(machineSessions(store.agents.value[host] ?? [])) : null;
+  if (!words) return null;
   return (
-    <p class="machine-need quiet small" role="status">{machineNeedLine(need, row)}</p>
+    <p class="machine-need quiet small" role="status">{words}</p>
   );
 }
 
