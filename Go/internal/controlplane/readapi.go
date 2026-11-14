@@ -181,6 +181,9 @@ func (rt *readTokens) serve(w http.ResponseWriter, r *http.Request) {
 	if group := q.Get("group"); group != "" {
 		scope = &wire.ReportScope{Kind: wire.ReportScopeKindGroup, Group: &group}
 	}
+	if project := q.Get("project"); project != "" {
+		scope = &wire.ReportScope{Kind: wire.ReportScopeKindProject, Project: &project}
+	}
 	if q.Get("report") == "delivery" {
 		rt.serveDelivery(w, r, scope, t.Made.By.User, now)
 		return

@@ -331,7 +331,7 @@
     },
     {
       "name": "builds/historyAll",
-      "x-capability": "builds.read/1",
+      "x-capability": "builds.read/2",
       "description": "builds/history over the control plane's copy (#5232): the runs of every machine in the scope that sends the repository's build timings, one for each ci-run ref and attempt, so a machine that sleeps is still in it.",
       "tags": [
         {
@@ -357,7 +357,7 @@
     },
     {
       "name": "builds/runAll",
-      "x-capability": "builds.read/1",
+      "x-capability": "builds.read/2",
       "description": "builds/run over the control plane's copy (#5232), as builds/historyAll reads it.",
       "tags": [
         {
@@ -2342,7 +2342,7 @@
     },
     {
       "name": "lineage/sessionsOn",
-      "x-capability": "lineage.read/1",
+      "x-capability": "lineage.read/2",
       "description": "The sessions on every machine in a scope that lineage links to these nodes (#4276), with when each started on them and its state now, from the merged copy: a machine that sleeps is still in it.",
       "tags": [
         {
@@ -2389,7 +2389,7 @@
     },
     {
       "name": "lineage/walkAll",
-      "x-capability": "lineage.read/1",
+      "x-capability": "lineage.read/2",
       "description": "lineage/walk over the merged copy of every machine's lineage in a scope (#4276), with each session's state now.",
       "tags": [
         {
@@ -5538,7 +5538,7 @@
     },
     {
       "name": "reports/export",
-      "x-capability": "reports/1",
+      "x-capability": "reports/2",
       "tags": [
         {
           "name": "web"
@@ -5563,7 +5563,7 @@
     },
     {
       "name": "reports/nodes",
-      "x-capability": "reports.nodes/1",
+      "x-capability": "reports.nodes/2",
       "description": "The lineage nodes of one kind in a scope (#3118): issues, PRs or releases, with their cost, sessions and lead time, filtered, sorted and in pages of at most 100, from the machines' lineage nodes as reports/value reads them.",
       "tags": [
         {
@@ -5615,7 +5615,7 @@
     },
     {
       "name": "reports/saveView",
-      "x-capability": "reports.views/1",
+      "x-capability": "reports.views/2",
       "description": "Keeps a view of Reports for the caller (#2019): a new one with no id, or changes the one with its id. At most 50; a scope the caller may see.",
       "tags": [
         {
@@ -5693,7 +5693,7 @@
     },
     {
       "name": "reports/usage",
-      "x-capability": "reports/1",
+      "x-capability": "reports/2",
       "tags": [
         {
           "name": "web"
@@ -5718,7 +5718,7 @@
     },
     {
       "name": "reports/value",
-      "x-capability": "reports.value/1",
+      "x-capability": "reports.value/2",
       "description": "What the work in a scope cost and delivered (#2351): cost per merged PR, per issue and per release, waste and lead time, from the machines' lineage nodes.",
       "tags": [
         {

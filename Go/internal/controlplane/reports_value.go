@@ -48,6 +48,7 @@ func (s *Service) valueReport(ctx context.Context, r wire.ReportRange, scope *wi
 		return wire.ReportValue{}, err
 	}
 	nodes, err := s.scopeLineage(ctx, keep)
+	nodes = s.projectNodes(ctx, nodes, scope)
 	if err != nil {
 		return wire.ReportValue{}, err
 	}

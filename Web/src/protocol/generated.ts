@@ -11717,13 +11717,22 @@ export interface ReportScope {
   kind: ReportScopeKind;
   /** The group's id, for kind group. */
   group?: string;
+  /**
+   * The project's id, for kind project (#5277): the rows whose folder is in the project, on every
+   * machine.
+   */
+  project?: string;
 }
 
-/** Me (the caller's own machines), a group's people, or every person (#1804). */
+/**
+ * Me (the caller's own machines), a group's people, every person (#1804), or a project's folders on
+ * every machine (#5277).
+ */
 export type ReportScopeKind =
   | "me"
   | "group"
-  | "org";
+  | "org"
+  | "project";
 
 /** A scope the caller may see, with its name (#1804). */
 export interface ReportScopeOption {
@@ -11732,8 +11741,8 @@ export interface ReportScopeOption {
 }
 
 /**
- * reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), and
- * the organisation for an admin.
+ * reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), every
+ * project (#5277), and the organisation for an admin.
  */
 export interface ReportScopes {
   scopes: ReportScopeOption[];
@@ -17649,7 +17658,7 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   ReportPolicy: { required: ["totalsOnly", "leads", "budgetsUSD"], optional: [] },
   ReportQuery: { required: ["range"], optional: ["format", "scope"] },
   ReportRow: { required: ["at", "person", "personName", "host", "hostName", "runtime", "cost", "inputTokens", "outputTokens", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "turns", "unpricedTurns", "workingSeconds", "waitingSeconds", "folder"], optional: ["workflow", "groups", "counts", "project", "projectName"] },
-  ReportScope: { required: ["kind"], optional: ["group"] },
+  ReportScope: { required: ["kind"], optional: ["group", "project"] },
   ReportScopeOption: { required: ["scope", "name"], optional: [] },
   ReportScopes: { required: ["scopes", "admin"], optional: [] },
   ReportValue: { required: ["range", "scope", "total", "waste", "unlinked", "perMergedPR", "prsMerged", "prsClosed", "prsReverted", "failedChecks", "issues", "releases"], optional: ["loaded", "overhead", "leadTimeSeconds", "cycleTimeSeconds", "estimateError", "forecastScore", "openEpics", "delivery", "limited"] },

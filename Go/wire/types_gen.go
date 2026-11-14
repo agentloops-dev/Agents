@@ -12499,14 +12499,18 @@ type ReportScope struct {
 
 	// The group's id, for kind group.
 	Group *string `json:"group,omitzero"`
+
+	// The project's id, for kind project (#5277): the rows whose folder is in the project, on every machine.
+	Project *string `json:"project,omitzero"`
 }
 
-// Me (the caller's own machines), a group's people, or every person (#1804).
+// Me (the caller's own machines), a group's people, every person (#1804), or a project's folders on every machine (#5277).
 type ReportScopeKind string
 
 const ReportScopeKindMe ReportScopeKind = "me"
 const ReportScopeKindGroup ReportScopeKind = "group"
 const ReportScopeKindOrg ReportScopeKind = "org"
+const ReportScopeKindProject ReportScopeKind = "project"
 
 // A scope the caller may see, with its name (#1804).
 type ReportScopeOption struct {
@@ -12515,7 +12519,7 @@ type ReportScopeOption struct {
 	Name string `json:"name"`
 }
 
-// reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), and the organisation for an admin.
+// reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), every project (#5277), and the organisation for an admin.
 type ReportScopes struct {
 	Scopes []ReportScopeOption `json:"scopes"`
 

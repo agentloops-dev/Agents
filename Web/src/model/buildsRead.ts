@@ -14,7 +14,7 @@ export type BuildsFrom = MachineRef | null;
 const mine: ReportScope = { kind: "me" };
 
 /** True when the control plane keeps the copy and answers the page. */
-export const planeReadsBuilds = (store: Store): boolean => store.planeHas(Capability.buildsRead1);
+export const planeReadsBuilds = (store: Store): boolean => store.planeHas(Capability.buildsRead2);
 
 export function readHistory(store: Store, ask: BuildsHistoryRequest, from: BuildsFrom): Promise<BuildsHistory> {
   return from === null ? store.link.call("builds/historyAll", { ...ask, scope: mine }) : store.link.call("builds/history", ask, from);
