@@ -17,6 +17,7 @@ import { MachineDialog } from "./MachineDialog";
 import { machineWords } from "../model/machineFromRepository";
 import { projectWords } from "../model/projects";
 import { firstBuild, newAppItem } from "../model/firstBuild";
+import { newMachineItems } from "../model/machineRow";
 
 type Adding = { kind: "folder" | "clone"; host: string } | { kind: "machine" };
 
@@ -65,10 +66,18 @@ export function NewFolderItems({ store, onChoose }: { store: Store; onChoose?: (
   );
 }
 
-/** The + at the head of the folders column: the window's toolbar button over its sidebar. */
+/**
+ * The + at the head of the folders column: the window's toolbar button over its sidebar (#5447). Every "new" is
+ * here: New Session, the folders' items, New App…, and New Machine, on ‹name› with two or more providers (#3979).
+ */
 export function NewFolderMenu({ store, newSession }: { store: Store; newSession?: (() => void) | undefined }) {
   const open = useSignal(false);
   const anchor = useRef<HTMLSpanElement>(null);
+  // New Machine needs a control plane, as the Mac's; its providers, for New Machine on ‹name›, are read when the menu opens.
+  const providers = store.providers.list.value;
+  useEffect(() => {
+    if (open.value && store.plane.value && providers === null) void store.providers.load();
+  }, [open.value]);
   useEffect(() => {
     if (!open.value) return;
     const close = (e: Event) => { if (!anchor.current?.contains(e.target as Node)) open.value = false; };
@@ -79,15 +88,19 @@ export function NewFolderMenu({ store, newSession }: { store: Store; newSession?
   }, [open.value]);
   return (
     <span class="menu-anchor new-folder" ref={anchor}>
-      <button class="icon" aria-label="New folder" title="New Session, or Add Folder… or Clone Folder from Git URL… as a folder"
+      <button class="icon" aria-label="New folder" title="New Session, Add Folder…, Clone Folder from Git URL…, New App… or New Machine…"
         aria-haspopup="menu" aria-expanded={open.value} onClick={() => (open.value = !open.value)}>+</button>
       {open.value && (
         <div class="popover right" role="menu" aria-label="New folder">
-          {/* As the sidebar's top row starts one, in the folder last started in (#628). */}
+          {/* In the folder last started in, or the one open (#628). */}
           <button role="menuitem" disabled={!newSession} onClick={() => { open.value = false; newSession?.(); }}>New Session</button>
           <NewFolderItems store={store} onChoose={() => (open.value = false)} />
           {/* Let's build your idea, again (#5132), as the window's File ▸ New App…, after the folders' items. */}
           <button role="menuitem" onClick={() => { open.value = false; firstBuild.newApp(); }}>{newAppItem}</button>
+          {/* New Machine (#4634, #5447; was the Machines group's last row, #5265): its sheet, on the default provider. */}
+          {store.plane.value && newMachineItems(providers ?? []).map((item) => (
+            <button role="menuitem" key={item.label} onClick={() => { open.value = false; store.newMachine(item.provider); }}>{item.label}</button>
+          ))}
           {/* A machine of its own for a repository (#1809), made by a machine provider. */}
           <button role="menuitem" onClick={() => { open.value = false; adding.value = { kind: "machine" }; }}>{machineWords.menuItem}</button>
         </div>

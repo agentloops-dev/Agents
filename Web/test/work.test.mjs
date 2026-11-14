@@ -328,6 +328,30 @@ test("a forge that could not be read keeps its last rows, dimmed; a fresh read h
   assert.equal(w.errorWords({ forge: "forgejo", message: "Forgejo: Get …: refused" }, undefined), "Forgejo: Get …: refused");
 });
 
+test("one machine's answer for a forge is enough: the others' errors for it do not show (#5449)", async () => {
+  const { settleLists } = await load("src/model/workLists.ts");
+  const down = { forge: "github", message: "rate limited" };
+  // Studio read GitHub; the Mac could not, and its error goes. The Mac's Linear error stays: no machine read Linear.
+  const shown = w.shownErrors([
+    { refs: [], errors: [down, { forge: "linear", message: "not connected" }] },
+    { refs: ["github:issue:alexec/agents#1"], errors: [] },
+  ]);
+  assert.deepEqual(shown, [[{ forge: "linear", message: "not connected" }], []]);
+  // A machine that did not answer shows only when no machine answered.
+  const offline = { forge: "", message: "offline" };
+  assert.deepEqual(w.shownErrors([{ refs: [], errors: [offline] }, { refs: [], errors: [] }]), [[], []]);
+  assert.deepEqual(w.shownErrors([{ refs: [], errors: [offline] }, { refs: [], errors: [{ ...offline }] }]), [[offline], [offline]]);
+  // One machine alone keeps its errors, also for a forge it read some of.
+  assert.deepEqual(w.shownErrors([{ refs: ["github:alexec/Agents#1"], errors: [down] }]), [[down]]);
+  // The rows a machine carried for a forge another machine read go with its error.
+  const settled = settleLists([
+    { host: "mac", items: [item(1)], errors: [down], stale: ["github:alexec/Agents#1"] },
+    { host: "studio", items: [item(2)], errors: [] },
+  ]);
+  assert.deepEqual(settled[0], { host: "mac", items: [], errors: [], stale: undefined });
+  assert.equal(settled[1].items.length, 1);
+});
+
 // The lists (#4395, specs/4328-work-look/lists.md), as WorkLookTests has them on the Mac (#4393).
 test("a draft says so after its number; a closed draft does not (#4395)", () => {
   const now = Date.parse("2026-10-30T12:00:00Z");

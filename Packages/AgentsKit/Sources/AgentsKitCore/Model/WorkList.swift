@@ -418,6 +418,25 @@ public enum WorkList {
                                     "azureboards": "Azure Boards", "forgejo": "Forgejo", "bitbucket": "Bitbucket",
                                     "azuredevops": "Azure DevOps"]
 
+    /// The forge of a ref: "github" of "github:pr:alexec/agents#1" and of the older "github:alexec/Agents#1".
+    public static func refForge(_ ref: String) -> String {
+        ref.firstIndex(of: ":").map { String(ref[..<$0]) } ?? ""
+    }
+
+    /// The errors a Work page shows of each machine's answer, by index (#5449): the refs it read and the forges it
+    /// could not read (forge "" when the machine itself did not answer). One machine's answer for a forge is enough:
+    /// a machine's error for a forge shows only when no other machine read an item of that forge, and a machine that
+    /// did not answer shows only when no other machine answered. As shownErrors on the web page.
+    public static func shownErrors(_ answers: [(refs: [String], errors: [DaemonAPI.ForgeListError])]) -> [[DaemonAPI.ForgeListError]] {
+        let answered = answers.map { !$0.errors.contains { $0.forge.isEmpty } }
+        let read = answers.map { Set($0.refs.map(refForge)) }
+        return answers.indices.map { i in
+            answers[i].errors.filter { e in
+                !answers.indices.contains { j in j != i && (e.forge.isEmpty ? answered[j] : read[j].contains(e.forge)) }
+            }
+        }
+    }
+
     /// A forge that could not be read: "GitHub on Studio: not connected".
     public static func errorWords(_ e: DaemonAPI.ForgeListError, machine: String?) -> String {
         "\(forgeTitle[e.forge] ?? e.forge)\(machine.map { " on \($0)" } ?? ""): \(e.message)"

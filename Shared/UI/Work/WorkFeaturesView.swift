@@ -113,7 +113,8 @@ final class WorkFeaturesState {
     private struct Parts {
         var rows: [MachineRef: [DaemonAPI.ForgeFeature]] = [:]
         var approvals: [MachineRef: [String]] = [:]
-        var errors: [MachineRef: [String]] = [:]
+        /// Each machine's forges it could not read; forge "" when the machine did not answer.
+        var errors: [MachineRef: [DaemonAPI.ForgeListError]] = [:]
         var ones: [MachineRef: DaemonAPI.WorkFeatures] = [:]
         /// The machines that gave their whole answer, or whose `work/features` failed.
         var done: Set<MachineRef> = []
@@ -145,8 +146,6 @@ final class WorkFeaturesState {
         let machines = model.workMachines(board: board)
         let reads = Set(model.featuresMachines.map(\.id))
         older = machines.filter { !reads.contains($0.id) }
-        let names = Dictionary(machines.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
-        let many = machines.count > 1
         let narrow = board.isEmpty ? nil : board
         // This device's copy has every epic: it stays until the machines have all answered.
         let progressive = fromDeviceRead == nil
@@ -183,28 +182,27 @@ final class WorkFeaturesState {
                 }
             }
             for await part in group {
-                let machine: (MachineRef) -> String? = { many ? names[$0] : nil }
                 switch part {
                 case let .rows(host, list):
                     // The whole answer came first: it has the rows already.
                     guard !parts.done.contains(host) else { continue }
                     parts.rows[host] = list.features
                     parts.approvals[host] = list.approvals ?? []
-                    parts.errors[host] = (list.errors ?? []).map { WorkList.errorWords($0, machine: machine(host)) }
+                    parts.errors[host] = list.errors ?? []
                 case let .answer(host, .one(one)):
                     parts.ones[host] = one
                     parts.rows[host] = one.features.map(\.feature)
                     parts.approvals[host] = one.approvals ?? []
-                    parts.errors[host] = (one.errors ?? []).map { WorkList.errorWords($0, machine: machine(host)) }
+                    parts.errors[host] = one.errors ?? []
                     parts.done.insert(host)
                 case let .answer(host, .features(list)):
                     parts.rows[host] = list.features
                     parts.approvals[host] = list.approvals ?? []
-                    parts.errors[host] = (list.errors ?? []).map { WorkList.errorWords($0, machine: machine(host)) }
+                    parts.errors[host] = list.errors ?? []
                     parts.done.insert(host)
                 case let .failed(host, words):
                     // Its rows stay, if they came; its features' issues are read as an older machine's.
-                    parts.errors[host, default: []].append(machine(host).map { "\($0): \(words)" } ?? words)
+                    parts.errors[host, default: []].append(.init(forge: "", message: words))
                     parts.done.insert(host)
                     if let m = machines.first(where: { $0.id == host }), !older.contains(where: { $0.id == host }) { older.append(m) }
                 case let .pulls(open):
@@ -249,7 +247,18 @@ final class WorkFeaturesState {
         }
         let order = machines.map(\.id)
         approvals = order.flatMap { parts.approvals[$0] ?? [] }
-        errors = order.flatMap { parts.errors[$0] ?? [] }
+        // One machine's answer for a forge is enough (#5449): the errors show once every machine answered, and then
+        // only a forge no machine read, or a machine that did not answer when none did.
+        if final {
+            let shown = WorkList.shownErrors(order.map { host in
+                ((parts.rows[host] ?? []).flatMap { $0.refs ?? [] }, parts.errors[host] ?? [])
+            })
+            errors = zip(machines, shown).flatMap { machine, lines in
+                lines.map { WorkList.errorWords($0, machine: machines.count > 1 ? machine.name : nil) }
+            }
+        } else {
+            errors = []
+        }
         let one = WorkFeatures.read(order.compactMap { parts.ones[$0] })
         oneRead = one.items
         if fresh || final {
@@ -289,7 +298,7 @@ final class WorkFeaturesState {
         let board = board
         let machines = older
         var got: [(host: MachineRef, item: DaemonAPI.ForgeItem)] = []
-        var problems: [String] = []
+        var answers: [(host: MachineRef, list: DaemonAPI.ForgeList)] = []
         await withTaskGroup(of: (MachineRef, Result<DaemonAPI.ForgeList, Error>).self) { group in
             for machine in machines {
                 group.addTask {
@@ -302,20 +311,28 @@ final class WorkFeaturesState {
                     }
                 }
             }
+            // Each machine's issues draw as it answers (#5449); an error shows once every machine answered, and only
+            // for a forge that no machine read.
             for await (host, result) in group {
-                let machine = machines.count > 1 ? machines.first { $0.id == host }?.name : nil
+                let list: DaemonAPI.ForgeList
                 switch result {
-                case let .success(list):
-                    got += list.items.map { (host, $0) }
-                    problems += (list.errors ?? []).map { WorkList.errorWords($0, machine: machine) }
-                case let .failure(error):
-                    problems.append(machine.map { "\($0): \(error.localizedDescription)" } ?? error.localizedDescription)
+                case let .success(read): list = read
+                case let .failure(error): list = .init(errors: [.init(forge: "", message: error.localizedDescription)])
                 }
+                answers.append((host, list))
+                got += list.items.map { (host, $0) }
+                if ask == mine, answers.count < machines.count, !list.items.isEmpty { items[key] = (oneRead[key] ?? []) + got.map(\.item) }
             }
         }
         guard ask == mine else { return }
+        let shown = WorkList.shownErrors(answers.map { ($0.list.items.map(\.node.ref), $0.list.errors ?? []) })
         items[key] = (oneRead[key] ?? []) + got.map(\.item)
-        itemErrors[key] = problems
+        itemErrors[key] = answers.enumerated().flatMap { i, entry in
+            let machine = machines.count > 1 ? machines.first { $0.id == entry.host }?.name : nil
+            return shown[i].map { e in
+                e.forge.isEmpty ? machine.map { "\($0): \(e.message)" } ?? e.message : WorkList.errorWords(e, machine: machine)
+            }
+        }
         let epics = WorkFeatures.opened(got.map(\.item)).epics
         let hosts = Dictionary(got.map { ($0.item.node.ref, $0.host) }, uniquingKeysWith: { a, _ in a })
         await withTaskGroup(of: Void.self) { group in

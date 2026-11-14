@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="330" viewBox="0 0 560 330" font-family="-apple-system, 'SF Pro Text', Helvetica, sans-serif"><style>.ink{fill:#1F1D1A}.sec{fill:#6F6A62}.h{font-size:11px;font-weight:600;letter-spacing:.4px;fill:#6F6A62}.r{font-size:14px;fill:#1F1D1A}.f{font-size:12px;fill:#6F6A62}.note{font-size:12px;fill:#b0006a;font-style:italic}.b{font-size:14px;font-weight:600;fill:#1F1D1A}</style>
+<rect x="0.5" y="0.5" width="279" height="320" rx="12" fill="#F3F0E8" stroke="#E2DCCF"/>
+<text x="20" y="34" class="h">MACHINES</text>
+<circle cx="26" cy="62" r="6" fill="#3E8E5A"/><text x="42" y="66" class="r">This Mac</text><text x="42" y="84" class="f">2 running</text>
+<circle cx="26" cy="112" r="6" fill="#3E8E5A"/><text x="42" y="116" class="r">machine-29</text><text x="42" y="134" class="f">1 running</text>
+<circle cx="26" cy="162" r="6" fill="#3E8E5A"/><text x="42" y="166" class="r">machine-31</text><text x="42" y="184" class="f">Idle</text>
+<circle cx="26" cy="212" r="6" fill="none" stroke="#6F6A62" stroke-width="1.4"/><text x="42" y="216" class="r">machine-33</text><text x="42" y="234" class="f">Stopped</text>
+<circle cx="26" cy="262" r="6" fill="#C0392B"/><text x="42" y="266" class="r">build-box</text><text x="42" y="284" class="f">Offline since 14:02</text>
+<rect x="8" y="94" width="264" height="48" rx="8" fill="none" stroke="#b0006a" stroke-dasharray="4 3"/>
+<text x="300" y="70" class="note">Online: "N running" (Working sessions), or "Idle".</text>
+<text x="300" y="130" class="note">Click: the machine's page (next boards).</text>
+<text x="300" y="230" class="note">A state line replaces the count: a stopped</text><text x="300" y="248" class="note">machine never says "0 running".</text>
+<text x="300" y="296" class="note">The dot never changes with sessions (#3971).</text>
+</svg>

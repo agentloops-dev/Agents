@@ -136,20 +136,7 @@ struct AgentsCommands: Commands {
                 .keyboardShortcut(MenuKeys.newApp)
                 .disabled(model.needsFirstRun || model.asksFirstBuild)
             // On a server (037).
-            if !model.hosts.servers.isEmpty {
-                Menu("Add Folder On") {
-                    ForEach(model.hosts.servers, id: \.self) { host in
-                        Button(model.hosts.label(host)) { requests.folderSheet = .chooseFolder(host) }
-                            .disabled(model.hostUnreachable(host))
-                    }
-                }
-                Menu("Clone Folder On") {
-                    ForEach(model.hosts.servers, id: \.self) { host in
-                        Button(model.hosts.label(host)) { requests.folderSheet = .clone(host) }
-                            .disabled(model.hostUnreachable(host))
-                    }
-                }
-            }
+            FolderOnMenus(model: model, requests: requests)
             // As the Machines header's `+` (#3973): the sheet, on the default provider (#4634).
             Button("New Machine…") { model.newMachine() }
                 .keyboardShortcut("m", modifiers: [.command, .shift])
@@ -444,7 +431,7 @@ struct AgentsCommands: Commands {
     }
 
     /// In the key window: a folder's own window opens its new session (#1513), as its
-    /// New Session row does; the main window composes in its selected folder.
+    /// New Session button does; the main window composes in its selected folder.
     private func newSession(inWorktree: Bool = false) {
         if let folderWindow {
             folderWindow.pick = .folder(folderWindow.key)

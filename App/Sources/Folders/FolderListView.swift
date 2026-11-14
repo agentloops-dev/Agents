@@ -242,10 +242,6 @@ struct FolderListView: View {
                     ForEach(model.machinesMaking) { making in
                         MakingMachineRow(making: making).appText(.supporting)
                     }
-                    // + New Machine, the group's last row, as the Remote's (#4034, #5265).
-                    if ControlConfig.endpoint != nil {
-                        NewMachineRow().appText(.supporting)
-                    }
                 } header: {
                     MachinesHeader()
                 }
@@ -429,6 +425,10 @@ struct FolderListView: View {
             guard wants else { return }
             searchFocused = true
             requests.wantsSessionSearchFocus = false
+        }
+        // The + over the sidebar (#5447), always shown: every "new", as the web's + menu has them.
+        .toolbar {
+            ToolbarItem { NewItemsMenu() }
         }
         // A folder dragged in from Finder becomes a folder, as File ▸ Add Folder
         // Folder… does. Folders only: a file is not somewhere to work. A file dropped on
@@ -664,7 +664,7 @@ struct FolderFold: View {
                 get: { isOpen },
                 set: { folds.set(key, open: $0) })) {
                 // Folded, nothing at all is under the heading (#356): see `isUnfolded`.
-                // A session starts from New Session, the first row of Sessions (#5267), or the menu.
+                // A session starts from New Session in the toolbar's + (#5447), ⌘N or the menu.
                 // The folder's pinned pages (#159), before its sessions. Not while
                 // searching: the search is for sessions.
                 if fold.showsPinnedPages {
@@ -678,18 +678,12 @@ struct FolderFold: View {
                 // started it, folded (#835). Under a Sessions row, as the workflows are
                 // under theirs (#2312), the only layout (#2381); not in a folder's own
                 // window, whose group is headed Sessions already.
-                // With New Session in it (#5267), a folder with no live session has the fold too.
-                let grouped = !inWindow && (!fold.sessions.isEmpty || fold.showsNewSession)
+                let grouped = !inWindow && !fold.sessions.isEmpty
                 let sessionsOpen = !grouped || fold.isSearching || folds.isOpen(key, .sessions)
                 if grouped {
                     SidebarFoldRow(title: "Sessions", count: fold.sessions.count, isOpen: Binding(
                         get: { sessionsOpen },
                         set: { folds.set(key, .sessions, open: $0) }))
-                }
-                // New Session, the fold's first row (#5267), as the Remote's Machines group has New
-                // Machine. In a folder's own window, the Sessions group's first row.
-                if sessionsOpen && fold.showsNewSession {
-                    NewSessionRow(folder: key, isNested: grouped)
                 }
                 // A closed fold has no rows at all (#237).
                 ForEach(FoldedRow.rows(sessionsOpen ? SidebarTree.rows(fold.sessions, in: model.work, folds: folds) : [],
@@ -830,42 +824,6 @@ private struct IssueGroupHeading: View {
 private struct ConnectorsRead: Equatable {
     var connected: Bool
     var folders: [FolderKey]
-}
-
-/// The first row of a folder's Sessions (#5267; was the sidebar's first row, #495): a new
-/// session in that folder, as ⌘N starts one, with the keyboard in the prompt. It carries the
-/// folder's own item, which the sidebar lights while its new session is open.
-private struct NewSessionRow: View {
-    @Environment(AppModel.self) private var model
-    @Environment(WindowRequests.self) private var requests
-    let folder: FolderKey
-    /// In its folder's Sessions fold: one level in, under the word Sessions, as a session's row.
-    var isNested = false
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(icon: "square.and.pencil")
-                .sidebarMark(Paper.accent)
-                .frame(width: 16)
-                .accessibilityHidden(true)
-            Text("New Session")
-                .lineLimit(1)
-            Spacer(minLength: 0)
-        }
-        .padding(.leading, isNested ? 22 : 0)
-        .appText(.supporting)
-        .contentShape(Rectangle())
-        .help("Start a new session in this folder")
-        // Every click, not only a changed selection: the row may already be the lit one
-        // while the prompt has lost the keyboard. See `FolderRow` before #375.
-        .simultaneousGesture(TapGesture().onEnded {
-            model.showFolder(folder)
-            requests.focusPrompt()
-        })
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("New Session")
-        .sidebarInk(.folder(folder)).tag(SidebarItem.folder(folder))
-    }
 }
 
 /// One session under its folder: the sessions column's row, tagged into the sidebar's
@@ -1138,30 +1096,66 @@ private struct NewMachineItems: View {
     }
 }
 
-/// + New Machine, the Machines group's last row (#5265), as the Remote's (#4034): a click
-/// opens New Machine's sheet on the default provider (#4634), with the options used last;
-/// its menu offers New Machine on ▸ when there are two or more providers.
-private struct NewMachineRow: View {
-    @Environment(AppModel.self) private var model
+/// Add Folder On ▸ and Clone Folder On ▸ a server (037), in the File menu and the toolbar's +
+/// (#5447): nothing with no server.
+struct FolderOnMenus: View {
+    let model: AppModel
+    let requests: WindowRequests
 
     var body: some View {
-        Button { model.newMachine() } label: {
-            HStack(spacing: 6) {
-                Image(icon: "plus")
-                    .sidebarMark(Paper.accent)
-                    .frame(width: 16)
-                    .accessibilityHidden(true)
-                // Primary ink: a row with no tag in the sidebar's list draws grey, as if disabled.
-                Text("New Machine")
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+        if !model.hosts.servers.isEmpty {
+            Menu("Add Folder On") {
+                ForEach(model.hosts.servers, id: \.self) { host in
+                    Button(model.hosts.label(host)) { requests.folderSheet = .chooseFolder(host) }
+                        .disabled(model.hostUnreachable(host))
+                }
             }
-            .contentShape(Rectangle())
+            Menu("Clone Folder On") {
+                ForEach(model.hosts.servers, id: \.self) { host in
+                    Button(model.hosts.label(host)) { requests.folderSheet = .clone(host) }
+                        .disabled(model.hostUnreachable(host))
+                }
+            }
         }
-        .buttonStyle(.plain)
-        .help("New Machine: choose what the provider makes, starting from the options used last")
-        .contextMenu { NewMachineItems() }
+    }
+}
+
+/// The + in the toolbar over the sidebar (#5447), as the web page's + at the head of its folders
+/// column (`NewFolderMenu`): New Session, in the folder last started in or the one selected
+/// (#628); Add Folder… and Clone Folder from Git URL…, with their On menus for a server, as the
+/// File menu has them; New App…; and New Machine, on ▸ with two or more providers. ⌘N and the
+/// File menu keep theirs.
+private struct NewItemsMenu: View {
+    @Environment(AppModel.self) private var model
+    @Environment(WindowRequests.self) private var requests
+
+    var body: some View {
+        Menu {
+            Button("New Session") {
+                guard let folder = model.newSessionFolder else { return }
+                model.showFolder(folder)
+                requests.focusPrompt()
+            }
+            .disabled(model.newSessionFolder == nil)
+            Divider()
+            Button("Add Folder…") { requests.folderSheet = .chooseFolder() }
+            Button("Clone Folder from Git URL…") { requests.folderSheet = .clone() }
+            FolderOnMenus(model: model, requests: requests)
+            // Let's build your idea, again (#5132), as File ▸ New App….
+            Button(FirstBuild.newAppItem) { model.newApp() }
+                .disabled(model.needsFirstRun || model.asksFirstBuild)
+            // A machine is made by a machine provider of the control plane: with none, no item.
+            if ControlConfig.endpoint != nil {
+                Divider()
+                NewMachineItems()
+            }
+        } label: {
+            Label("New", toolbarIcon: "plus")
+        }
+        .menuIndicator(.hidden)
+        .help("New Session, Add Folder…, Clone Folder from Git URL…, New App… or New Machine…")
+        .accessibilityLabel("New")
+        .task { await model.loadMachineProviders() }
     }
 }
 
