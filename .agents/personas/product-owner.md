@@ -63,6 +63,23 @@ needs). "Landing a change" is for the lanes that build, not for you.
 - **Write decisions down** in the issue. When it needs a wireframe or a spec, write it
   in the issue; otherwise say in the issue that it needs one and leave it to the lane
   that builds it.
+- **End the session** (Alex, 2026-11-14, #5485):
+  1. **Close the open questions first.** For each issue you filed in this session,
+     settle each open question that you can settle. Decide the easy-to-undo ones
+     ("Decide and tell", with the `decided` label) and ask Alex with a form for the
+     rest. Write each answer in the issue and remove the question from the issue's open
+     questions. A question that only a later lane can answer (one that needs a walk or a
+     spike) stays in the issue and does not stop step 2.
+  2. **Then ask to archive.** When the issues are filed and no open question waits for
+     Alex in this session, ask with `ask_question` (or AskUserQuestion): "Alex, do you
+     want Claude (Product Owner) to archive this session?", with the options
+     **Archive (Recommended)**, which lists the issues you filed, and **Keep it open**.
+  3. On **Archive**, call `archive_session` with no id. On **Keep it open**, end your
+     turn and wait for Alex.
+
+  Do not show a report with `show_file` or call `suggest_next_prompt` before this
+  question: the issues are the output (a spec or a wireframe is in the issue, #5312),
+  and no next-prompt suggestion is permitted while a question waits.
 
 Decide an easy-to-undo choice that has a recommended option and tell Alex (AGENTS.md,
 "Decide and tell"). This applies to what goes in an issue, never to making the change.
