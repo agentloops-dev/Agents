@@ -57,11 +57,11 @@ struct RemoteMachineSessionsSection: View {
         .contentShape(Rectangle())
     }
 
-    private static func tint(_ agent: Agent) -> Color {
+    private static func tint(_ agent: Agent) -> AnyShapeStyle {
         switch MachineSessions.Group(agent.group()) {
-        case .working: Paper.accent
-        case .waiting: .orange
-        default: .secondary
+        case .working: AnyShapeStyle(Paper.accent)
+        case .waiting: StateTint.attention.style(or: .secondary)
+        default: AnyShapeStyle(Color.secondary)
         }
     }
 }
