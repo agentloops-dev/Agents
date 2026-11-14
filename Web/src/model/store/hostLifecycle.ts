@@ -74,10 +74,38 @@ export const hostLifecycleMethods = {
       if (watching?.host === host) await this.loadTranscript(host, watching.session);
     });
   },
+  /** The host the Multiplier and Time pages read: this Mac's, or the first machine when none is this Mac. */
+  isHomeHost(this: Store, host: string): boolean {
+    const mac = this.macHostID.peek();
+    const hosts = this.hosts.peek();
+    return hosts.some((h) => h.id === mac) ? host === mac : hosts[0]?.id === host;
+  },
+  /**
+   * The reads of one machine's own pages: its leases, achievements and Multiplier (#5291). Made
+   * the first time a page shows the machine (`loadRuntimes(host)`) and again with each reload
+   * of it after; a refresh of a machine no page shows makes none.
+   */
+  loadHostExtras(this: Store, host: string): void {
+    const failed = (_what: string) => (error: unknown) => {
+      log("call.failed", error instanceof CallFailed ? error.code : undefined);
+      return null;
+    };
+    void this.link.call("resources/snapshot", {}, host).then((snapshot) => {
+      this.leases.value = { ...this.leases.value, [host]: snapshot };
+    }).catch(failed("resources/snapshot"));
+    // A host from before #984 doesn't know it: the Time page shows no achievements.
+    void this.link.call("achievements/state", {}, host).then((state) => this.takeAchievements(host, state))
+      .catch(failed("achievements/state"));
+    // A host from before #3903 doesn't know it: the Multiplier page shows — ×.
+    void this.link.call("multiplier/state", {}, host)
+      .then((state) => { this.multiplier.value = { ...this.multiplier.value, [host]: state }; this.usageRead(host, "multiplier"); })
+      .catch(failed("multiplier/state"));
+  },
   /** A host removed: what was held of it goes with it, the runtimes included (#291). */
   forgetHost(this: Store, host: string): void {
     const prefix = `${host}|`;
     this.listPoints.delete(host);
+    this.detailed.delete(host);
     pruneFolderKeys(host, []);
     const without = <T,>(held: Record<string, T>) => Object.fromEntries(Object.entries(held).filter(([key]) => key !== host));
     const notOf = <T,>(held: Record<string, T>) => Object.fromEntries(Object.entries(held).filter(([key]) => !key.startsWith(prefix)));
@@ -176,7 +204,9 @@ export const hostLifecycleMethods = {
         if (moving.length > 0) this.moves.value = { ...this.moves.value, ...Object.fromEntries(moving.map((m) => [m.agentID, m])) };
       }).catch(failed("agents/moves"));
     }
-    void this.loadRuntimes(host);
+    // Only a host a page shows takes its own settings and page reads (#5291).
+    if (this.detailed.has(host)) this.loadHostExtras(host);
+    void this.loadRuntimes(host, this.detailed.has(host) || this.isHomeHost(host));
     void this.link.call("pins/list", {}, host).then((listed) => {
       const held = Object.fromEntries(Object.entries(this.pins.value).filter(([key]) => !key.startsWith(`${host}|`)));
       const sessions = Object.fromEntries(Object.entries(this.sessionPins.value).filter(([key]) => !key.startsWith(`${host}|`)));
@@ -207,9 +237,6 @@ export const hostLifecycleMethods = {
     void this.link.call("agents/resuming", {}, host).then((response) => {
       this.resuming.value = { ...this.resuming.value, [host]: response.agentIDs };
     }).catch(failed("agents/resuming"));
-    void this.link.call("resources/snapshot", {}, host).then((snapshot) => {
-      this.leases.value = { ...this.leases.value, [host]: snapshot };
-    }).catch(failed("resources/snapshot"));
     // A host from before #488 doesn't know the method, and hosts no servers.
     void this.link.call("mcp/hosted", {}, host).then((snapshot) => {
       this.hostedMCP.value = { ...this.hostedMCP.value, [host]: snapshot };
@@ -242,13 +269,6 @@ export const hostLifecycleMethods = {
       void this.link.call("summaries/list", {}, host).then((pages) => { this.summaryPages.value = pages; })
         .catch(failed("summaries/list"));
     }
-    // A host from before #984 doesn't know it: the Time page shows no achievements.
-    void this.link.call("achievements/state", {}, host).then((state) => this.takeAchievements(host, state))
-      .catch(failed("achievements/state"));
-    // A host from before #3903 doesn't know it: the Multiplier page shows — ×.
-    void this.link.call("multiplier/state", {}, host)
-      .then((state) => { this.multiplier.value = { ...this.multiplier.value, [host]: state }; this.usageRead(host, "multiplier"); })
-      .catch(failed("multiplier/state"));
     const [permissions, elicitations] = await Promise.all([
       this.link.call("permissions/pending", {}, host).catch(failed("permissions/pending")),
       this.link.call("elicitations/pending", {}, host).catch(failed("elicitations/pending")),
