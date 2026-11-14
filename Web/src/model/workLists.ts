@@ -11,8 +11,8 @@ import { hostAnswers } from "./capabilities";
 import { keepWork, keptWork, keptWorkRead } from "./localCopy";
 import { mark } from "./marks";
 import {
-  filterRows, forgeListRequest, fromForge, lineageRow, mergeBoards, mergeForge, neighbours, parseWorkQuery, projectRepos, sortRows,
-  workQuery,
+  filterRows, forgeListRequest, fromForge, lineageRow, mergeBoards, mergeForge, neighbours, parseWorkQuery, projectRepos, refForge,
+  shownErrors, sortRows, workQuery,
   type Neighbours, type WorkFilter, type WorkKind, type WorkProject, type WorkProjectRepos, type WorkRow, type WorkSort, type WorkState,
 } from "./work";
 import { rememberEach, remembered } from "./workRemembered";
@@ -112,7 +112,12 @@ export async function loadBoards(store: Store, again = false): Promise<void> {
     const kept = await keptWork<ProjectBoard[]>("boards", mine);
     if (kept && boardsRead === mine && boards.peek().length === 0) boards.value = kept;
   }
-  const got = await Promise.all(hosts.map((h) => store.link.call("forge/boards", {}, h.id).then((b) => b.boards, () => [])));
+  // Each machine's boards draw as it answers (#5449): a slow machine does not hold the menu.
+  const got: ProjectBoard[][] = [];
+  await Promise.all(hosts.map((h) => store.link.call("forge/boards", {}, h.id).then((b) => b.boards, () => []).then((b) => {
+    got.push(b);
+    if (boardsRead === mine && b.length > 0) boards.value = mergeBoards(got);
+  })));
   if (boardsRead !== mine) return;
   boards.value = mergeBoards(got);
   if (boards.peek().length > 0) keepWork("boards", mine, boards.peek());
@@ -164,6 +169,21 @@ export function carryStale(got: HostList, had: HostList | undefined): HostList {
   const fresh = new Set(got.items.map((i) => i.node.ref));
   const kept = had.items.filter((i) => !fresh.has(i.node.ref) && (failed.has("") || failed.has(i.node.ref.slice(0, i.node.ref.indexOf(":")))));
   return kept.length === 0 ? got : { ...got, items: [...got.items, ...kept], stale: kept.map((i) => i.node.ref) };
+}
+
+/** Each machine's list with only the errors the page shows (#5449): one machine's answer for a forge is enough, so the
+ * others' errors for it go, and with them the rows they carried from the last read (#4392). */
+export function settleLists(read: readonly HostList[]): HostList[] {
+  const shown = shownErrors(read.map((h) => ({ refs: h.items.filter((i) => !h.stale?.includes(i.node.ref)).map((i) => i.node.ref), errors: h.errors })));
+  return read.map((h, i) => {
+    const errors = shown[i]!;
+    if (errors.length === h.errors.length) return h;
+    const failed = new Set(errors.map((e) => e.forge));
+    const keep = (ref: string) => failed.has("") || failed.has(refForge(ref));
+    const gone = new Set((h.stale ?? []).filter((ref) => !keep(ref)));
+    const stale = (h.stale ?? []).filter(keep);
+    return { ...h, errors, items: h.items.filter((it) => !gone.has(it.node.ref)), stale: stale.length > 0 ? stale : undefined };
+  });
 }
 
 /** What a list's first page is kept under in this device's copy (#4930): kind, state, sort and board, as the window's. */
@@ -225,16 +245,32 @@ export async function loadList(store: Store, l: WorkListState): Promise<void> {
       return;
     }
     const method = kind === "issue" ? "forge/issues" : "forge/pulls";
-    const read = await Promise.all(hosts.map(async (h): Promise<HostList> => {
+    // Each machine's rows draw as it answers (#5449): the first machine that answers for a forge is enough, and a slow
+    // or offline one does not hold the page. The others keep the rows they had until they answer; errors wait for all.
+    const answers = new Map<string, HostList>();
+    const drawn = () => hosts.flatMap((h) => {
+      const got = answers.get(h.id);
+      if (got) return [{ ...got, errors: [] }];
       const had = before.find((b) => b.host === h.id);
+      return had ? [had] : [];
+    });
+    await Promise.all(hosts.map(async (h) => {
+      const had = before.find((b) => b.host === h.id);
+      let got: HostList;
       try {
-        const got = await store.link.call(method, forgeListRequest(forgeState(state), board), h.id);
-        return carryStale({ host: h.id, items: got.items, cursor: got.cursor, errors: got.errors ?? [], total: got.total }, had);
+        const list = await store.link.call(method, forgeListRequest(forgeState(state), board), h.id);
+        got = carryStale({ host: h.id, items: list.items, cursor: list.cursor, errors: list.errors ?? [], total: list.total }, had);
       } catch (e) {
-        return carryStale({ host: h.id, items: [], errors: [{ forge: "", message: describe(e) }] }, had);
+        got = carryStale({ host: h.id, items: [], errors: [{ forge: "", message: describe(e) }] }, had);
       }
+      answers.set(h.id, got);
+      if (!current() || answers.size === hosts.length || got.items.length === 0) return;
+      l.lineage.value = known.nodes;
+      l.lineageCursor.value = known.cursor;
+      l.lists.value = drawn();
     }));
     if (!current()) return;
+    const read = settleLists(hosts.map((h) => answers.get(h.id)!));
     l.lineage.value = known.nodes;
     l.lineageCursor.value = known.cursor;
     l.lists.value = read;

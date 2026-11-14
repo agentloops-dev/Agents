@@ -347,6 +347,22 @@ export function lineageWords(n: ReportNode | undefined): string | undefined {
   return parts.length === 0 ? undefined : parts.join(" · ");
 }
 
+/** The forge of a ref: "github" of "github:pr:alexec/agents#1" and of the older "github:alexec/Agents#1". */
+export const refForge = (ref: string) => ref.slice(0, Math.max(0, ref.indexOf(":")));
+
+/** One machine's answer to a Work read (#5449): the refs it read, and the forges it could not read (forge "" when the
+ * machine itself did not answer). */
+export interface ForgeAnswer { refs: readonly string[]; errors: readonly ForgeListError[] }
+
+/** The errors a Work page shows of each machine's answer, by index (#5449). One machine's answer for a forge is enough:
+ * a machine's error for a forge shows only when no other machine read an item of that forge, and a machine that did
+ * not answer shows only when no other machine answered. As WorkList.shownErrors on the window. */
+export function shownErrors(answers: readonly ForgeAnswer[]): ForgeListError[][] {
+  const answered = answers.map((a) => !a.errors.some((e) => e.forge === ""));
+  const read = answers.map((a) => new Set(a.refs.map(refForge)));
+  return answers.map((a, i) => a.errors.filter((e) => !answers.some((_, j) => j !== i && (e.forge === "" ? answered[j] : read[j]!.has(e.forge)))));
+}
+
 /** A forge that could not be read: "GitHub on Studio: not connected". */
 export function errorWords(e: ForgeListError, machine: string | undefined): string {
   const forge = forgeTitle[e.forge] ?? e.forge;
