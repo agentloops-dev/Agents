@@ -105,6 +105,24 @@ test("the lead is the live session labelled lead and the epic", () => {
   assert.equal(f.epicLead({ kind: "issue", ref: "linear:ENG-5" }, [agent("l", ["ENG-5", "lead"], "finished")])?.id, "l");
 });
 
+// #5453: a row in Work ▸ Issues shows the session that works on its item now.
+test("a row's session is a live one labelled with the item, one that needs you first", () => {
+  const stopped = agent("stopped", ["#5453"], "stopped", 900);
+  const old = agent("old", ["#5453"], "running", 100);
+  const newer = agent("newer", ["#5453", "lane"], "starting", 200);
+  const asks = agent("asks", ["#5453"], "waitingOnUser", 50);
+  const other = agent("other", ["#5454"], "running", 300);
+  const pr = agent("pr", ["P#5453"], "running", 400);
+  assert.equal(f.workingSession(node(5453), [stopped, old, newer, other, pr])?.id, "newer");
+  assert.equal(f.workingSession(node(5453), [old, asks, newer])?.id, "asks");
+  assert.equal(f.workingSession(node(5453), [stopped, other, pr]), undefined);
+  assert.equal(f.workingSession({ kind: "pr", ref: "github:alexec/Agents#5453" }, [old, pr])?.id, "pr");
+  assert.equal(f.workingSession({ kind: "issue", ref: "linear:ENG-5" }, [agent("l", ["ENG-5"], "running")])?.id, "l");
+  assert.equal(f.itemLabel({ kind: "pr", ref: "gitlab:a/b!7" }), "P!7");
+  assert.equal(f.workingWords("running"), "Working");
+  assert.equal(f.workingWords("waitingOnUser"), "Needs you");
+});
+
 test("the lead says its state", () => {
   assert.equal(f.leadRowWords(undefined), "—");
   assert.equal(f.leadRowWords("running"), "● lead working");

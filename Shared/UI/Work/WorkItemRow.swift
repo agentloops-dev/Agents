@@ -15,6 +15,10 @@ struct WorkItemRow: View {
     var latest = false
     /// Sets the list's Label filter to a chip (Mac); nil leaves the chips as words.
     var pick: ((String) -> Void)?
+    /// The session that works on the item now (#5453): its dot and words open its chat.
+    var session: Agent?
+    /// Opens a session's chat; nil leaves the mark as words.
+    var openSession: ((UUID) -> Void)?
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -26,6 +30,11 @@ struct WorkItemRow: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityWords)
+        .accessibilityActions {
+            if let session, let openSession {
+                Button("Open the session") { openSession(session.id) }
+            }
+        }
     }
 
     /// The pictures the forge gives on a row: the author's, for an assignee who wrote it (#4363).
@@ -46,6 +55,7 @@ struct WorkItemRow: View {
                     ForEach((0 ... WorkLook.rowChips).reversed(), id: \.self) { chips($0) }
                 }
                 Spacer(minLength: 8)
+                sessionMark
                 trailing
                 WorkAvatarStack(logins: row.assignees, avatars: avatars)
             }
@@ -84,6 +94,7 @@ struct WorkItemRow: View {
             HStack(spacing: 6) {
                 secondLine
                 Spacer(minLength: 4)
+                sessionMark
                 // No checks glyph or review word on a phone: the item's page has them (lists.md section 3).
                 comments
             }
@@ -96,6 +107,31 @@ struct WorkItemRow: View {
             .foregroundStyle(.secondary)
             .monospacedDigit()
             .lineLimit(1)
+    }
+
+    /// The session that works on the item now (#5453): the lead's dot, green while it works, the
+    /// attention colour when it needs you, and its word. In the row, which is one button, it
+    /// takes the tap itself, as a label chip does.
+    @ViewBuilder
+    private var sessionMark: some View {
+        if let session {
+            let asks = session.state == .waitingOnUser
+            let mark = HStack(spacing: 4) {
+                Circle().fill(asks ? Paper.forgeWaiting : WorkLook.Tone.green.color).frame(width: 7, height: 7)
+                    .accessibilityHidden(true)
+                Text(WorkFeatures.workingWords(session.state)).lineLimit(1)
+            }
+            .appText(.fine)
+            .foregroundStyle(asks ? Paper.forgeWaiting : .secondary)
+            .fixedSize()
+            if let openSession {
+                Button { openSession(session.id) } label: { mark }
+                    .buttonStyle(.plain)
+                    .help("\(session.title ?? "The session"): \(WorkFeatures.workingWords(session.state).lowercased()). Open its chat")
+            } else {
+                mark
+            }
+        }
     }
 
     /// A pull request's checks glyph and review word, then the comment count.
@@ -126,6 +162,7 @@ struct WorkItemRow: View {
                      latest ? WorkReleaseChip.latest.words : nil]
         parts.append(row.labels.isEmpty ? nil : "labels " + row.labels.map(\.name).joined(separator: ", "))
         parts.append(WorkLook.rowLine(row, compact: false))
+        parts.append(session.map { "session " + WorkFeatures.workingWords($0.state).lowercased() })
         parts.append(WorkLook.checks(row.checks)?.accessibilityLabel)
         parts.append(WorkLook.reviewWord(row.review))
         parts.append(row.comments > 0 ? "\(row.comments) comments" : nil)

@@ -6,7 +6,7 @@ import { effect, useSignal } from "@preact/signals";
 import { Fragment, type ComponentChildren } from "preact";
 import { useEffect, useMemo, useRef } from "preact/hooks";
 import type {
-  ForgeCloseRequest, ForgeComment, ForgeDone, ForgeEvent, ForgeLinked, ForgeItemDetail, ForgeLabel, ForgeLabelRequest, LineageCostRollup, LineageEstimate, LineageForecast, LineageGraph,
+  Agent, ForgeCloseRequest, ForgeComment, ForgeDone, ForgeEvent, ForgeLinked, ForgeItemDetail, ForgeLabel, ForgeLabelRequest, LineageCostRollup, LineageEstimate, LineageForecast, LineageGraph,
 } from "../protocol/generated";
 import type { Store } from "../model/store";
 import { Capability } from "../protocol/capabilities.generated";
@@ -47,7 +47,7 @@ import { branchWords, mergeBox, mergedStrip, offers, pullStateWords, reviewersWo
 import { WorkPlan } from "./WorkPlan";
 import { WorkDocs } from "./Docs";
 import { hasPlan, leadStart, leadWords, planSessions } from "../model/epicPlan";
-import { epicLead } from "../model/workFeatures";
+import { epicLead, workingSession, workingWords } from "../model/workFeatures";
 import { go, replace, route, routeHash } from "../route";
 import {
   allRows, askKey, boardHosts, boards, forgeHosts, fromList, hasMore, listProjects, loadBoards, loadList, loadMore, nextAfter, pageNeighbours,
@@ -111,6 +111,12 @@ export function WorkList({ store, kind }: { store: Store; kind: WorkKind }) {
   const projects = workProjects(store);
   useEffect(() => { l.projects.value = projects; }, [projectsKey(projects)]);
   const offeredProjects = listProjects(l).map((p) => p.project);
+  // The sessions this page knows, of every machine (#5453): a row shows the one that works on its item now.
+  const agents = Object.values(store.agents.value).flat();
+  const openSession = (a: Agent) => {
+    const host = sessionHost(store.agents.value, a.id);
+    if (host) go({ host, folder: a.worktree?.folder || a.cwd, session: a.id });
+  };
   const rowsAt = useRef<HTMLUListElement>(null);
   const end = useRef<HTMLDivElement>(null);
   // Back from an item's page: the list at the row last opened, selected.
@@ -228,6 +234,7 @@ export function WorkList({ store, kind }: { store: Store; kind: WorkKind }) {
                 <ul class="work-rows work-item-rows" ref={rowsAt}>
                   {rows.map((r) => <WorkRowView key={r.node.ref} row={r} several={offered.repos.length > 1} dim={stale.has(r.node.ref)} pick={pick}
                     latest={newest?.has(r.node.ref) === true} read={pictureReader(store, r.host)}
+                    session={kind === "release" ? undefined : workingSession(r.node, agents)} openSession={openSession}
                     open={() => { l.opened.value = r.node.ref; fromList.value = placeKey(kind, r.node.ref); go({ nav: "work", section: kind, item: r.node.ref }); }} />)}
                 </ul>
               )}
@@ -265,8 +272,10 @@ export function StatePill({ state, draft, status }: { state: string; draft?: boo
 /** A row (#4392, parts.md section 2), a link to its page (#4395): the state icon, the title and at most three chips, the comment count and the
  * assignees; under it the number, the age, the author and what lineage knows. On a phone the CSS folds it: the
  * title on two lines, every chip under it, the short line and no avatars. */
-export function WorkRowView({ row, several, dim, pick, read, open, latest: isLatest = false }: {
+export function WorkRowView({ row, several, dim, pick, read, open, latest: isLatest = false, session, openSession }: {
   row: WorkRow; several: boolean; dim: boolean; pick: (label: string) => void; read: ReadPicture | undefined; open: () => void; latest?: boolean;
+  /** The session that works on the item now (#5453): its dot and words at the row's end open its chat. */
+  session?: Agent | undefined; openSession?: ((agent: Agent) => void) | undefined;
 }) {
   const line = rowLine(row, Date.now());
   const checks = row.node.kind === "pr" ? checksGlyph(row.checks) : undefined;
@@ -295,6 +304,14 @@ export function WorkRowView({ row, several, dim, pick, read, open, latest: isLat
           </span>
         </span>
         <span class="work-row-end small">
+          {session && (
+            // In a row, which is one link, the mark takes the click itself, as a label chip does (#5453).
+            <span class={`work-row-session ${session.state === "waitingOnUser" ? "attention" : "working"}`}
+              title={`${session.title || "The session"}: ${workingWords(session.state).toLowerCase()}. Open its chat`}
+              aria-label={`Session ${workingWords(session.state).toLowerCase()}`}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); openSession?.(session); }}>
+              <span class="dot" aria-hidden="true" />{workingWords(session.state)}</span>
+          )}
           {checks && <span class={`work-checks ${checks.tone}`} title={checks.words} aria-label={checks.words}>{checks.tone === "running" ? <Icon name="loader-circle" /> : <Glyph of={checks.mark} />}</span>}
           {review && <span class={`work-review${row.review === "changes_requested" ? " bad" : ""}`}>{review}</span>}
           {comments > 0 && <span class="work-count" aria-label={`${comments} comment${comments === 1 ? "" : "s"}`}>

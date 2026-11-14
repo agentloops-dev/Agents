@@ -172,6 +172,29 @@ public enum WorkFeatures {
         }
     }
 
+    /// The label a session that works on an item has (#5453): "#12" for an issue (ENG-5 on
+    /// Linear), "P#12" for a pull request, as set_session_labels and Start Agent label it.
+    public static func itemLabel(_ node: DaemonAPI.LineageNode) -> String {
+        (node.kind == "pr" ? "P" : "") + WorkList.shortRef(node.ref)
+    }
+
+    /// The session that works on a row's item now (#5453), of those this app knows: labelled
+    /// with the item's label and starting, running or waiting on a person. One that needs you
+    /// first, then the newest; nil with none.
+    public static func workingSession(on node: DaemonAPI.LineageNode, in agents: [Agent]) -> Agent? {
+        let label = itemLabel(node)
+        return agents.filter { a in a.state.holdsRuntime && a.labels.contains { $0.value == label } }
+            .max { a, b in
+                let asks = (a.state == .waitingOnUser, b.state == .waitingOnUser)
+                return asks.0 != asks.1 ? asks.1 : a.createdAt < b.createdAt
+            }
+    }
+
+    /// A row's session in words (#5453): "Working", or "Needs you" when it waits on a person.
+    public static func workingWords(_ state: AgentState) -> String {
+        state == .waitingOnUser ? "Needs you" : "Working"
+    }
+
     /// An epic's lead on its row: "● lead working", "● lead needs you", "lead stopped"; "No lead"
     /// with none (features-delivery.md note 7).
     public static func leadWords(_ state: AgentState?) -> String {

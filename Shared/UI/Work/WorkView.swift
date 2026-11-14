@@ -303,6 +303,8 @@ private struct WorkListPane: View {
     private func rowsList(_ shown: [WorkList.Row], lines: [String]) -> some View {
         let several = Set(list.all.map(\.repo)).count > 1
         let latest = kind == .release ? WorkReleaseLook.latest(list.all) : []
+        // The sessions this app knows, of every machine (#5453): a row shows the one that works on its item now.
+        let agents = kind == .release ? [] : model.workAgents
         return ScrollViewReader { reader in
             selectable {
                 if list.fromDevice {
@@ -313,7 +315,9 @@ private struct WorkListPane: View {
                 }
                 ForEach(shown) { row in
                     Button { open(row.id) } label: {
-                        WorkItemRow(row: row, several: several, compact: compact, latest: latest.contains(row.id), pick: pick)
+                        WorkItemRow(row: row, several: several, compact: compact, latest: latest.contains(row.id), pick: pick,
+                                    session: kind == .release ? nil : WorkFeatures.workingSession(on: row.node, in: agents),
+                                    openSession: { model.openWorkSession($0) })
                     }
                     .buttonStyle(WorkRowButtonStyle())
                     .environment(\.workPictures, row.host.map { WorkPictures(model: model, host: $0) })

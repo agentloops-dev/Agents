@@ -181,3 +181,11 @@ a.work-row { box-sizing: border-box; text-decoration: none; color: inherit; }
 .work-error, .work-from-device { margin: 0 0 8px; }
 .work-error .message-words { display: flex; flex-direction: column; }
 .work-error.middle { margin: 48px auto; max-width: 520px; }
+
+/* The session that works on a row's item now (#5453): the lead's dot, green while it works, the attention colour when it
+   needs you, and its word; a click opens its chat. */
+.work-row-session { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; cursor: pointer; }
+.work-row-session:hover { text-decoration: underline; }
+.work-row-session .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--plan-running, var(--forge-open)); }
+.work-row-session.attention .dot { background: var(--tint-attention); }
+.work-row-session.attention { color: var(--tint-attention); }
