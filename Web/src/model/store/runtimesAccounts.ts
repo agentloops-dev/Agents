@@ -55,24 +55,34 @@ export const runtimesAccountsMethods = {
   browse(this: Store, host: string, path: string): Promise<DirectoryListing> {
     return this.link.call("files/browse", { path }, host);
   },
-  /** What runs on a host, and what each runtime takes; asked once a connection. */
-  async loadRuntimes(this: Store, host: string): Promise<void> {
+  /**
+   * What runs on a host, and what each runtime takes (#5291). Every host gets the lists that
+   * pages across machines read (runtimes, allowances, policy, pass-through); only a host a
+   * page shows also gets its own settings (accounts, remembered modes, sandbox, profiles, the
+   * Mac's permissions) and the reads of its own pages (`loadHostExtras`). `detail` is false
+   * for a host no page shows: a refresh makes 4 calls there, not 9 and 4 more.
+   */
+  async loadRuntimes(this: Store, host: string, detail = true): Promise<void> {
     const macHost = this.macHostID.peek();
     // Auto's cells, for the pills' words on every runtime (#2658): the Mac's host keeps them.
     if (!this.autoMappings.peek()[macHost]) void this.loadAuto(macHost);
+    if (detail && !this.detailed.has(host)) {
+      this.detailed.add(host);
+      this.loadHostExtras(host);
+    }
     const [runtimes, accounts, modes, sandbox, allowances, profiles, policy, passThrough, permissions] = await Promise.all([
       this.link.call("runtimes/list", {}, host).catch(() => null),
-      this.link.call("runtimes/accounts", {}, host).catch(() => null),
-      this.link.call("modes/remembered", {}, host).catch(() => null),
+      detail ? this.link.call("runtimes/accounts", {}, host).catch(() => null) : null,
+      detail ? this.link.call("modes/remembered", {}, host).catch(() => null) : null,
       // A host on an older build is not asked by the page: every runtime then follows its own.
-      this.link.call("sandbox/state", {}, host).catch(() => null),
+      detail ? this.link.call("sandbox/state", {}, host).catch(() => null) : null,
       this.link.call("runtimes/allowances", null, host).catch(() => null),
       // A host on an older build has no added accounts (#840).
-      this.link.call("runtimes/accountProfiles", {}, host).catch(() => null),
+      detail ? this.link.call("runtimes/accountProfiles", {}, host).catch(() => null) : null,
       // A host on an older build follows no policy (#998).
       this.link.call("daemon/policyState", {}, host).catch(() => null),
       this.link.call("settings/passThrough", {}, host).catch(() => null),
-      this.clientPermissions.value[macHost] ? Promise.resolve(null)
+      !detail || this.clientPermissions.value[macHost] ? null
         : this.link.call("clientPermissions/state", {}, macHost).catch(() => null),
     ]);
     batch(() => {
