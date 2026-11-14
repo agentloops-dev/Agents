@@ -83,3 +83,16 @@ a release, on the iPhone:
 
 When a time is over, file an issue labelled `feature:performance` with the times, the
 network and the phone.
+
+## Many machines (#5282)
+
+`scripts/scale-fixture.sh STORE_DIR [N]` writes 1,000 fake machines into a scratch control
+plane's store, before `agents-control` starts on it. The fixture has no host behind a
+machine, so each lists as offline. The budgets are in `scripts/perf-budgets.json`, under
+`scale`:
+
+- `machines/list` with a limit of 50: under 50 ms at 1,000 machines. `Go/internal/controlplane/scalefixture_test.go` times the whole list now (a ceiling of 500 ms, measured at 95 ms under `-race`) and holds the time off CI (CI only logs it); the wire step that adds a limit switches it to a limit of 50 and 50 ms.
+- A web refresh makes a fixed count of calls, the same at 1 and at 1,000 machines, not a count for each machine.
+- The sidebar's Machines group shows at most 7 machine rows plus **All Machines**.
+
+The last two are proved by the children of epic #5281 that change the web store and the sidebar.
