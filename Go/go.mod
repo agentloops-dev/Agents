@@ -27,6 +27,7 @@ require (
 	gocloud.dev/secrets/hashivault v0.46.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/net v0.60.0
+	golang.org/x/sync v0.23.0
 	golang.org/x/sys v0.48.0
 	golang.org/x/text v0.42.0
 	google.golang.org/api v0.272.0
@@ -102,7 +103,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20260316180232-0b37fe3546d5 // indirect

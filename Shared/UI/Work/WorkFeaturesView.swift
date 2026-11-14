@@ -100,8 +100,32 @@ final class WorkFeaturesState {
         case features(DaemonAPI.ForgeFeatures)
     }
 
+    /// A part of a read, as it comes in (#5450): a machine's features to draw the rows with, its
+    /// whole answer, a `work/features` that failed, or its open pull requests.
+    private enum Part: Sendable {
+        case rows(MachineRef, DaemonAPI.ForgeFeatures)
+        case answer(MachineRef, Answer)
+        case failed(MachineRef, String)
+        case pulls([DaemonAPI.ForgeItem])
+    }
+
+    /// What the parts of one read gave so far.
+    private struct Parts {
+        var rows: [MachineRef: [DaemonAPI.ForgeFeature]] = [:]
+        var approvals: [MachineRef: [String]] = [:]
+        var errors: [MachineRef: [String]] = [:]
+        var ones: [MachineRef: DaemonAPI.WorkFeatures] = [:]
+        /// The machines that gave their whole answer, or whose `work/features` failed.
+        var done: Set<MachineRef> = []
+        var pulls: [DaemonAPI.ForgeItem] = []
+    }
+
     /// Read the features, unless they were read for this Refresh and board already; then, from an
-    /// older machine, the issues and plans of the features that are open.
+    /// older machine, the issues and plans of the features that are open. Each part draws as it
+    /// comes in (#5450): a machine with `work/features` is also asked `forge/features`, which the
+    /// daemon answers from the same read before the plans, so the rows draw first and each
+    /// feature's epics fill in when the machines that list it answer; a machine draws without
+    /// waiting for the others.
     func load(model: any WorkModel) async {
         let mine = ask
         guard read != mine || features == nil else { return }
@@ -116,80 +140,86 @@ final class WorkFeaturesState {
             shownFor = board
             fromDeviceRead = at
         }
-        let found = await model.workBoards()
-        guard ask == mine else { return }
-        boards = found
+        // The boards beside the features, not before them (#5450).
+        async let found = model.workBoards()
         let machines = model.workMachines(board: board)
         let reads = Set(model.featuresMachines.map(\.id))
         older = machines.filter { !reads.contains($0.id) }
-        var got: [(host: MachineRef, answer: Answer)] = []
-        var prs: [DaemonAPI.ForgeItem] = []
+        let names = Dictionary(machines.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+        let many = machines.count > 1
         let narrow = board.isEmpty ? nil : board
-        await withTaskGroup(of: (MachineRef, Answer, [DaemonAPI.ForgeItem]).self) { group in
+        // This device's copy has every epic: it stays until the machines have all answered.
+        let progressive = fromDeviceRead == nil
+        // Another board's epics go at the first part; on a Refresh, those on screen stay until theirs come.
+        var fresh = shownFor != board
+        var parts = Parts()
+        await withTaskGroup(of: Part.self) { group in
             for machine in machines {
                 let one = reads.contains(machine.id)
-                group.addTask {
-                    // The open pull requests say what works on a child and its checks (note 8).
-                    async let open = try? model.forgeList(.pr, .init(state: "open", limit: 100), on: machine.id)
-                    let answer: Answer
-                    do {
-                        answer = one
-                            ? .one(try await model.forge(DaemonAPI.Method.workFeatures, DaemonAPI.WorkFeaturesRequest(board: narrow),
-                                                         returning: DaemonAPI.WorkFeatures.self, on: machine.id))
-                            : .features(try await model.forge(DaemonAPI.Method.forgeFeatures,
-                                                              DaemonAPI.ForgeFeaturesRequest(board: narrow),
-                                                              returning: DaemonAPI.ForgeFeatures.self, on: machine.id))
-                    } catch {
-                        answer = .features(.init(errors: [.init(forge: "", message: error.localizedDescription)]))
+                // The open pull requests say what works on a child and its checks (note 8).
+                group.addTask { .pulls((try? await model.forgeList(.pr, .init(state: "open", limit: 100), on: machine.id))?.items ?? []) }
+                if one {
+                    group.addTask {
+                        guard let rows = try? await model.forge(DaemonAPI.Method.forgeFeatures, DaemonAPI.ForgeFeaturesRequest(board: narrow),
+                                                                returning: DaemonAPI.ForgeFeatures.self, on: machine.id) else {
+                            return .pulls([])
+                        }
+                        return .rows(machine.id, rows)
                     }
-                    return (machine.id, answer, await open?.items ?? [])
+                }
+                group.addTask {
+                    do {
+                        return one
+                            ? .answer(machine.id, .one(try await model.forge(DaemonAPI.Method.workFeatures,
+                                                                             DaemonAPI.WorkFeaturesRequest(board: narrow),
+                                                                             returning: DaemonAPI.WorkFeatures.self, on: machine.id)))
+                            : .answer(machine.id, .features(try await model.forge(DaemonAPI.Method.forgeFeatures,
+                                                                                  DaemonAPI.ForgeFeaturesRequest(board: narrow),
+                                                                                  returning: DaemonAPI.ForgeFeatures.self, on: machine.id)))
+                    } catch {
+                        return one ? .failed(machine.id, error.localizedDescription)
+                            : .answer(machine.id, .features(.init(errors: [.init(forge: "", message: error.localizedDescription)])))
+                    }
                 }
             }
-            for await (host, answer, open) in group {
-                got.append((host, answer))
-                prs += open
+            for await part in group {
+                let machine: (MachineRef) -> String? = { many ? names[$0] : nil }
+                switch part {
+                case let .rows(host, list):
+                    // The whole answer came first: it has the rows already.
+                    guard !parts.done.contains(host) else { continue }
+                    parts.rows[host] = list.features
+                    parts.approvals[host] = list.approvals ?? []
+                    parts.errors[host] = (list.errors ?? []).map { WorkList.errorWords($0, machine: machine(host)) }
+                case let .answer(host, .one(one)):
+                    parts.ones[host] = one
+                    parts.rows[host] = one.features.map(\.feature)
+                    parts.approvals[host] = one.approvals ?? []
+                    parts.errors[host] = (one.errors ?? []).map { WorkList.errorWords($0, machine: machine(host)) }
+                    parts.done.insert(host)
+                case let .answer(host, .features(list)):
+                    parts.rows[host] = list.features
+                    parts.approvals[host] = list.approvals ?? []
+                    parts.errors[host] = (list.errors ?? []).map { WorkList.errorWords($0, machine: machine(host)) }
+                    parts.done.insert(host)
+                case let .failed(host, words):
+                    // Its rows stay, if they came; its features' issues are read as an older machine's.
+                    parts.errors[host, default: []].append(machine(host).map { "\($0): \(words)" } ?? words)
+                    parts.done.insert(host)
+                    if let m = machines.first(where: { $0.id == host }), !older.contains(where: { $0.id == host }) { older.append(m) }
+                case let .pulls(open):
+                    parts.pulls += open
+                }
+                guard progressive, ask == mine, !parts.rows.isEmpty else { continue }
+                draw(parts, of: machines, fresh: fresh, final: false)
+                fresh = false
             }
         }
+        let boardsFound = await found
         guard ask == mine else { return }
-        approvals = []
-        errors = []
-        items = [:]
-        itemErrors = [:]
-        places = [:]
-        unread = []
-        waiting = []
-        pulls = [:]
-        oneRead = [:]
-        var lists: [[DaemonAPI.ForgeFeature]] = []
-        var ones: [DaemonAPI.WorkFeatures] = []
-        for entry in got {
-            let machine = machines.count > 1 ? machines.first { $0.id == entry.host }?.name : nil
-            let (found, approved, problems): ([DaemonAPI.ForgeFeature], [String]?, [DaemonAPI.ForgeListError]?)
-            switch entry.answer {
-            case let .one(one):
-                ones.append(one)
-                (found, approved, problems) = (one.features.map(\.feature), one.approvals, one.errors)
-            case let .features(list):
-                (found, approved, problems) = (list.features, list.approvals, list.errors)
-            }
-            lists.append(found)
-            approvals += approved ?? []
-            errors += (problems ?? []).map { WorkList.errorWords($0, machine: machine) }
-        }
-        let one = WorkFeatures.read(ones)
-        oneRead = one.items
-        places = one.places
-        unread = one.unread
-        waiting = one.waiting
-        let merged = WorkFeatures.merge(lists)
-        // With every machine on `work/features`, every feature is read: an open one draws at once.
-        if older.isEmpty {
-            items = Dictionary(merged.map { ($0.name.lowercased(), one.items[$0.name.lowercased()] ?? []) }, uniquingKeysWith: { a, _ in a })
-        }
-        pulls = WorkFeatures.pullsByLabel(prs)
-        features = merged
-        shownFor = board
-        fromDeviceRead = nil
+        boards = boardsFound
+        draw(parts, of: machines, fresh: fresh || !progressive, final: true)
+        guard let merged = features else { return }
         guard !older.isEmpty else {
             // Kept whole only when every machine gave it in one read, and none failed.
             if errors.isEmpty {
@@ -199,12 +229,49 @@ final class WorkFeaturesState {
             return
         }
         let groups = WorkFeatures.groups(merged, agents: model.workAgents, approvals: approvals)
+        let olderRows = Set(older.flatMap { parts.rows[$0.id] ?? [] }.map { $0.name.lowercased() })
         let open = groups.flatMap { entry in
             entry.features.filter { isOpen($0.name, in: entry.group, of: groups.map(\.group)) }.map(\.name)
-        }
+        }.filter { olderRows.contains($0.lowercased()) || items[$0.lowercased()] == nil }
         await withTaskGroup(of: Void.self) { group in
             for name in open { group.addTask { await self.readItems(name, model: model) } }
         }
+    }
+
+    /// Draws what the parts gave so far. `fresh` drops the epics the read before left; else they
+    /// stay until the new ones come, and `final` drops what the read before left of the rest. A
+    /// feature's epics draw once every machine that lists it gave its whole answer, unless an
+    /// older machine lists it: then `readItems` reads it.
+    private func draw(_ parts: Parts, of machines: [(id: MachineRef, name: String)], fresh: Bool, final: Bool) {
+        if fresh {
+            items = [:]
+            itemErrors = [:]
+        }
+        let order = machines.map(\.id)
+        approvals = order.flatMap { parts.approvals[$0] ?? [] }
+        errors = order.flatMap { parts.errors[$0] ?? [] }
+        let one = WorkFeatures.read(order.compactMap { parts.ones[$0] })
+        oneRead = one.items
+        if fresh || final {
+            places = one.places
+            unread = one.unread
+            waiting = one.waiting
+        } else {
+            places.merge(one.places) { $1 }
+            unread = one.unread.union(unread.subtracting(one.places.keys))
+            waiting.formUnion(one.waiting)
+        }
+        let merged = WorkFeatures.merge(order.compactMap { parts.rows[$0] })
+        let olderIDs = Set(older.map(\.id))
+        for f in merged {
+            let key = f.name.lowercased()
+            let listers = order.filter { host in parts.rows[host]?.contains { $0.name.lowercased() == key } == true }
+            if listers.allSatisfy({ parts.done.contains($0) && !olderIDs.contains($0) }) { items[key] = one.items[key] ?? [] }
+        }
+        pulls = WorkFeatures.pullsByLabel(parts.pulls)
+        features = merged
+        shownFor = board
+        fromDeviceRead = nil
     }
 
     /// Open or fold a feature; read its issues when it opens and they are not read yet.

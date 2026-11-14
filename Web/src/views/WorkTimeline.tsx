@@ -100,7 +100,18 @@ async function loadTimeline(store: Store) {
     const copy = await keptWorkRead<Timeline>("timeline", kept);
     if (copy && read === key && timeline.value === null) { timeline.value = copy.value; plotAt.value = copy.at; fromDevice.value = true; }
   }
-  const got = await Promise.all(hosts.map(async (h) => {
+  const before = timeline.value;
+  // Each machine's epics draw as it answers (#5450), with the sessions the plot had; this device's copy stays until all have.
+  const progressive = !fromDevice.value;
+  const got: { t?: Timeline; refs?: string[] | undefined; problem?: string }[] = [];
+  const part = () => {
+    const merged = mergeTimelines(got.flatMap((g) => g.t ? [g.t] : []));
+    const epics = chosenBoard ? new Set(got.flatMap((g) => g.refs ?? [])) : undefined;
+    if (epics) merged.epics = merged.epics.filter((e) => epics.has(e.item.node.ref));
+    return merged;
+  };
+  await Promise.all(hosts.map(async (h) => {
+    let g: (typeof got)[number];
     try {
       const t = await store.link.call("work/timeline", { project: chosen.id, from: toWireDate(new Date(span.start)), to: toWireDate(new Date(span.end)) }, h.id);
       // A board narrows to its epics: the forge says which they are.
@@ -111,31 +122,33 @@ async function loadTimeline(store: Store) {
           refs = list.items.map((i: ForgeItem) => i.node.ref);
         } catch { refs = []; }
       }
-      return { t, refs };
+      g = { t, refs };
     } catch (e) {
-      return { problem: hosts.length > 1 ? `${h.name}: ${describe(e)}` : describe(e) };
+      g = { problem: hosts.length > 1 ? `${h.name}: ${describe(e)}` : describe(e) };
     }
+    got.push(g);
+    if (progressive && g.t && read === key) timeline.value = startedBySessions(part(), sessions.value);
   }));
   if (read !== key) return;
   reading.value = false;
   const failed = got.flatMap((g) => g.problem ? [g.problem] : []);
   problem.value = failed.length === 0 ? null : failed.join("\n");
   // With every machine failing, the last plot stays, dimmed.
-  stale.value = hosts.length > 0 && failed.length === hosts.length && timeline.value !== null;
+  stale.value = hosts.length > 0 && failed.length === hosts.length && before !== null;
   if (stale.value) return;
-  const merged = mergeTimelines(got.flatMap((g) => g.t ? [g.t] : []));
-  const epics = chosenBoard ? new Set(got.flatMap((g) => g.refs ?? [])) : undefined;
-  if (epics) merged.epics = merged.epics.filter((e) => epics.has(e.item.node.ref));
-  if (timeline.value) {
-    const fresh = landedRefs(timeline.value, merged);
+  const merged = part();
+  if (before) {
+    const fresh = landedRefs(before, merged);
     if (fresh.length > 0) landed.value = new Set(fresh);
   }
   fromMachines = merged;
-  sessions.value = await readSessions(store, merged);
-  if (read !== key || fromMachines !== merged) return;
+  // The plot draws now, with the sessions it had; the new ones start their children when they come.
   timeline.value = startedBySessions(merged, sessions.value);
   plotAt.value = Date.now();
   fromDevice.value = false;
+  sessions.value = await readSessions(store, merged);
+  if (read !== key || fromMachines !== merged) return;
+  timeline.value = startedBySessions(merged, sessions.value);
   // Kept for the window around now, read by every machine: a plot scrolled away is not the one a person opens on.
   if (failed.length === 0 && Math.abs(anchor.value - Date.now()) < 3_600_000) keepWork("timeline", kept, timeline.value);
 }

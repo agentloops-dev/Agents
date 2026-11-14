@@ -42,7 +42,7 @@ func (d *Daemon) workFeatures(ctx context.Context, r wire.WorkFeaturesRequest) (
 		<-timelineRead
 		return wire.WorkFeatures{}, Invalid("work/features: %v", strings.TrimPrefix(err.Error(), "forge/features: "))
 	}
-	out := wire.WorkFeatures{Features: []wire.WorkFeature{}, Approvals: features.Approvals, Errors: features.Errors}
+	out := wire.WorkFeatures{Features: []wire.WorkFeature{}, Approvals: features.Approvals, Errors: slices.Clone(features.Errors)}
 	addError := func(e wire.ForgeListError) {
 		if !slices.Contains(out.Errors, e) {
 			out.Errors = append(out.Errors, e)
