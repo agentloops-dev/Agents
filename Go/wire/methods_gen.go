@@ -558,6 +558,8 @@ const FailureWorktreeMissing = -32029
 const FailureWrongProtocolVersion = -32008
 
 // What the control plane answers (control.openrpc.json).
+var CallApprovalsList = Method[Empty, PersonApprovals]{"approvals/list"}
+var CallApprovalsPut = Method[PersonApprovalsPut, PersonApprovals]{"approvals/put"}
 var CallAttentionNeed = Method[AttentionNeed, Empty]{"attention/need"}
 var CallAttentionTurn = Method[AttentionTurn, Empty]{"attention/turn"}
 var CallAuditExport = Method[AuditQuery, AuditExport]{"audit/export"}

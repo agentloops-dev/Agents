@@ -2006,6 +2006,85 @@
         "request"
       ]
     },
+    "PersonApproval": {
+      "type": "object",
+      "description": "A person's approval of one file's content (#5462, epic #5281), signed by the machine that approved it. kind is \"workflow\" (a workflow file with the skills it names) or \"connector\" (one entry of .agents/mcp.json); digest is the hash the approving machine saw, so a changed file has another digest and is not covered. sig is ECDSA P-256 (r then s) with SHA-256 over \"agents-approval/1\\n\", the person, kind, digest, host and at, each ended by a newline but the last (at in decimal). A machine takes one only when the machine lock it pinned names key as one of the person's machines. The control plane keeps and sends them, and signs nothing.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "workflow",
+            "connector"
+          ]
+        },
+        "digest": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "description": "What the file is called, to say where an approval came from."
+        },
+        "host": {
+          "type": "string",
+          "description": "The approving machine's id."
+        },
+        "hostName": {
+          "type": "string",
+          "description": "The approving machine's name when it approved."
+        },
+        "at": {
+          "type": "integer",
+          "description": "Seconds since 1970."
+        },
+        "key": {
+          "$ref": "core.schema.json#/definitions/Base64"
+        },
+        "sig": {
+          "$ref": "core.schema.json#/definitions/Base64"
+        }
+      },
+      "required": [
+        "kind",
+        "digest",
+        "host",
+        "at",
+        "key",
+        "sig"
+      ],
+      "additionalProperties": false
+    },
+    "PersonApprovals": {
+      "type": "object",
+      "description": "approvals/list (#5462): every approval kept for the caller's person, at most 2000.",
+      "properties": {
+        "approvals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PersonApproval"
+          }
+        }
+      },
+      "required": [
+        "approvals"
+      ],
+      "additionalProperties": false
+    },
+    "PersonApprovalsPut": {
+      "type": "object",
+      "description": "approvals/put (#5462): approvals a machine signed, at most 50 at a time. The control plane keeps the first of each kind and digest.",
+      "properties": {
+        "approvals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PersonApproval"
+          }
+        }
+      },
+      "required": [
+        "approvals"
+      ],
+      "additionalProperties": false
+    },
     "PinArrangeWorkflowsRequest": {
       "type": "object",
       "properties": {
@@ -3931,6 +4010,10 @@
           "items": {
             "$ref": "mcp.schema.json#/definitions/MCPTriggerStatus"
           }
+        },
+        "approvedFrom": {
+          "type": "string",
+          "description": "Where this machine's approval came from when it is another machine's of the same person (#5462), such as \"Approved by you on Studio, 2026-11-14\"."
         }
       },
       "required": [

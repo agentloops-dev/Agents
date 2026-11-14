@@ -479,6 +479,7 @@ func (d *Daemon) eventServerNamed(name, folder string, secrets map[string]string
 		if e.name != name {
 			continue
 		}
+		d.adoptSharedMCPFolder(folder)
 		d.mcpMu.Lock()
 		approved, _, _ := d.mcpApprovalsLocked()
 		d.mcpMu.Unlock()

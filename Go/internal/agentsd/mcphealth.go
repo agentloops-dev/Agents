@@ -314,6 +314,9 @@ func (d *Daemon) mcpHealthPass() (wire.MCPHealthSnapshot, []mcpDue) {
 		}
 	}
 	sort.Strings(folders)
+	for _, folder := range folders {
+		d.adoptSharedMCPFolder(folder)
+	}
 	d.mcpMu.Lock()
 	approved, _, _ := d.mcpApprovalsLocked()
 	d.mcpMu.Unlock()

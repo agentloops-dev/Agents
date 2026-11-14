@@ -896,6 +896,10 @@ export function workflowStatusLines(s: WorkflowSummary, now = new Date()): Statu
     lines.push({ glyph: "⊘", text: "Denied on this machine — it does not run here",
       detail: "Other machines still see it waiting. Approve to let it run here" });
   }
+  // An approval taken from the person's other machine (#5462).
+  if (!s.awaitingApproval && !s.deniedHere && s.approvedFrom) {
+    lines.push({ glyph: "✓", text: s.approvedFrom, detail: "The file is the same as when you approved it there. A change to it waits for your OK" });
+  }
   if (!s.isArchived) lines.push(enabledLine(s));
   // A ready-made copy's newer versions (#4071).
   const updated = readyMadeUpdatedSentence(s);

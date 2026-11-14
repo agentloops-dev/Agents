@@ -912,6 +912,10 @@
         },
         "views": {
           "type": "string"
+        },
+        "approvedFrom": {
+          "type": "string",
+          "description": "Where this machine's approval came from when it is another machine's of the same person (#5462)."
         }
       },
       "required": [

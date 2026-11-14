@@ -1374,6 +1374,16 @@ func (m *Methods) HostSaid(host, method string, params json.RawMessage) (any, er
 			go m.s.checkCaps(owner)
 		}
 		return map[string]any{}, nil
+	case wire.CallApprovalsList.Name:
+		person := m.s.ownerOf(host)
+		return m.s.listApprovals(ctx, person)
+	case wire.CallApprovalsPut.Name:
+		// A person's approvals (#5462): signed by the machine, sent to the person's others.
+		put, err := require[wire.PersonApprovalsPut](params, "PersonApprovalsPut")
+		if err != nil {
+			return nil, err
+		}
+		return m.s.putApprovals(ctx, host, put)
 	case wire.CallBusPublish.Name:
 		// The event bus (#4729): events this machine recorded, envelope only.
 		publish, err := require[wire.BusPublish](params, "BusPublish")

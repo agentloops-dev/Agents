@@ -125,6 +125,7 @@ func (d *Daemon) viewServerFor(name, folder string) (viewServer, viewTrouble) {
 		if e.name != name {
 			continue
 		}
+		d.adoptSharedMCPFolder(folder)
 		d.mcpMu.Lock()
 		approved, _, _ := d.mcpApprovalsLocked()
 		d.mcpMu.Unlock()

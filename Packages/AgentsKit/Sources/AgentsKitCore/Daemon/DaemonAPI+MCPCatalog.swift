@@ -387,12 +387,16 @@ extension DaemonAPI {
         /// What the person said about the server's views (#191): `shown`, `hidden` or
         /// `mixed`. Nil when it never asked.
         public var views: String?
+        /// Where this machine's approval came from, when it is the person's on another of their
+        /// machines (#5462).
+        public var approvedFrom: String?
 
         public var id: String { name }
 
         public init(name: String, summary: String, managed: ManagedMCPServer?, approval: MCPApprovalState,
                     missingSecrets: [String], secretNames: [String] = [], entryDigest: String,
-                    signIn: MCPSignInState? = nil, views: String? = nil) {
+                    signIn: MCPSignInState? = nil, views: String? = nil, approvedFrom: String? = nil) {
+            self.approvedFrom = approvedFrom
             self.views = views
             self.name = name
             self.summary = summary

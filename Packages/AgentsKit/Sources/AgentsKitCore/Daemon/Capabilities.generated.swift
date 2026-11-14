@@ -712,6 +712,8 @@ public enum Capability {
 
     /// The capability of each method and notification in control.openrpc.json.
     public static let control: [String: String] = [
+        "approvals/list": "approvals/1",
+        "approvals/put": "approvals/1",
         "attention/need": "attention/2",
         "attention/turn": "liveactivity/1",
         "audit/export": "events.audit/1",
