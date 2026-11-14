@@ -2259,7 +2259,7 @@
         },
         "scope": {
           "$ref": "#/definitions/ReportScope",
-          "description": "Me, a group or the organisation (#1804)."
+          "description": "Me or the organisation (#1804)."
         }
       },
       "required": [
@@ -2292,33 +2292,17 @@
     },
     "ReportPolicy": {
       "type": "object",
-      "description": "Who sees what in Reports (#1804), set by an admin in Console ▸ Report Policy.",
+      "description": "The organisation's budget in Reports (#1804), set by an admin in Console ▸ Report Policy.",
       "properties": {
-        "totalsOnly": {
-          "type": "boolean",
-          "description": "A group lead sees the group's totals only, with no person or machine named. An admin always sees each person."
-        },
-        "leads": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "description": "Each group's leads, by group id: users who see the group's reports."
-        },
         "budgetsUSD": {
           "type": "object",
           "additionalProperties": {
             "type": "number"
           },
-          "description": "A budget for a calendar month in US dollars, by group id, or \"org\" for the organisation."
+          "description": "A budget for a calendar month in US dollars, by \"org\" for the organisation."
         }
       },
       "required": [
-        "totalsOnly",
-        "leads",
         "budgetsUSD"
       ],
       "additionalProperties": false
@@ -2336,7 +2320,7 @@
         },
         "scope": {
           "$ref": "#/definitions/ReportScope",
-          "description": "Me, a group or the organisation (#1804)."
+          "description": "Me or the organisation (#1804)."
         }
       },
       "required": [
@@ -2417,13 +2401,6 @@
           "type": "number",
           "description": "Waiting for the person: TimeBucket's person."
         },
-        "groups": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "The groups the person is in (#1804), by id, for a group or organisation scope; absent when the person is hidden."
-        },
         "counts": {
           "$ref": "#/definitions/ReportCounts",
           "description": "What the agents did (#2019): sessions, pull requests and waits."
@@ -2467,10 +2444,6 @@
       "properties": {
         "kind": {
           "$ref": "#/definitions/ReportScopeKind"
-        },
-        "group": {
-          "type": "string",
-          "description": "The group's id, for kind group."
         }
       },
       "required": [
@@ -2482,10 +2455,9 @@
       "type": "string",
       "enum": [
         "me",
-        "group",
         "org"
       ],
-      "description": "Me (the caller's own machines), a group's people, or every person (#1804)."
+      "description": "Me (the caller's own machines) or every person (#1804). There is no group lens (#5278)."
     },
     "ReportScopeOption": {
       "type": "object",
@@ -2506,7 +2478,7 @@
     },
     "ReportScopes": {
       "type": "object",
-      "description": "reports/scopes' answer (#1804): Me, each group the caller leads (every group for an admin), and the organisation for an admin.",
+      "description": "reports/scopes' answer (#1804): Me, and the organisation for an admin.",
       "properties": {
         "scopes": {
           "type": "array",
@@ -3202,17 +3174,6 @@
         "scope": {
           "$ref": "#/definitions/ReportScope",
           "description": "The scope the rows are of (#1804)."
-        },
-        "personsHidden": {
-          "type": "boolean",
-          "description": "The rows say no person and no machine (#1804): a group lead's view when the policy says totals only."
-        },
-        "groupNames": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "The name of each group the rows name (#1804)."
         },
         "budgetUSD": {
           "type": "number",

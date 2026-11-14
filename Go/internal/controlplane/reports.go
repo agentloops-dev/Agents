@@ -328,7 +328,7 @@ func (m *Methods) reportMethod(ctx context.Context, method string, params json.R
 	}
 	switch format {
 	case wire.ReportFormatCsv:
-		return wire.ReportExport{Text: reportCSV(rows, report.GroupNames), Count: int64(len(rows)), Format: format}, nil
+		return wire.ReportExport{Text: reportCSV(rows), Count: int64(len(rows)), Format: format}, nil
 	case wire.ReportFormatJsonl:
 		var b bytes.Buffer
 		for _, r := range rows {
@@ -344,9 +344,8 @@ func (m *Methods) reportMethod(ctx context.Context, method string, params json.R
 	return nil, fail(invalidParams, "Export as csv or jsonl.")
 }
 
-// reportCSV is the rows as CSV, with a cost column for each currency that any row has, and
-// the person's groups by name, as a chargeback wants them (#1804).
-func reportCSV(rows []wire.ReportRow, groupNames map[string]string) string {
+// reportCSV is the rows as CSV, with a cost column for each currency that any row has.
+func reportCSV(rows []wire.ReportRow) string {
 	currencies := map[string]bool{}
 	for _, r := range rows {
 		for c := range r.Cost {
@@ -365,7 +364,7 @@ func reportCSV(rows []wire.ReportRow, groupNames map[string]string) string {
 	header = append(header, "inputTokens", "outputTokens", "thoughtTokens", "cachedReadTokens",
 		"cachedWriteTokens", "turns", "unpricedTurns", "workingSeconds", "waitingSeconds",
 		"workflow", "sessions", "failedSessions", "prsOpened", "prsMerged", "prsReverted", "mergeSeconds", "waits",
-		"workflowRuns", "workflowFailures", "groups")
+		"workflowRuns", "workflowFailures")
 	var b bytes.Buffer
 	w := csv.NewWriter(&b)
 	w.Write(header)
@@ -394,11 +393,6 @@ func reportCSV(rows []wire.ReportRow, groupNames map[string]string) string {
 		} else {
 			line = append(line, "", "", "", "", "", "", "", "", "")
 		}
-		var groups []string
-		for _, id := range r.Groups {
-			groups = append(groups, groupNames[id])
-		}
-		line = append(line, strings.Join(groups, "; "))
 		w.Write(line)
 	}
 	w.Flush()

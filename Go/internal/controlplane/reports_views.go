@@ -28,7 +28,7 @@ const (
 var reportPages = map[wire.ReportPage]bool{wire.ReportPageSpend: true, wire.ReportPageOutcomes: true, wire.ReportPageTime: true,
 	wire.ReportPageRuntimes: true, wire.ReportPageAdoption: true, wire.ReportPageWorkflows: true}
 
-var reportWays = map[string]bool{"person": true, "folder": true, "machine": true, "runtime": true, "group": true, "workflow": true}
+var reportWays = map[string]bool{"person": true, "folder": true, "machine": true, "runtime": true, "workflow": true}
 
 func reportViewsKey(user string) string { return reportViewsPrefix + strings.ToLower(user) + ".json" }
 
@@ -70,7 +70,7 @@ func (s *Service) saveReportView(ctx context.Context, user string, v wire.Report
 		return wire.ReportViews{}, fail(invalidParams, "Say a range: day, week, month or threeMonths.")
 	}
 	if v.By != nil && !reportWays[*v.By] {
-		return wire.ReportViews{}, fail(invalidParams, "Say a way to add up: person, folder, machine, runtime, group or workflow.")
+		return wire.ReportViews{}, fail(invalidParams, "Say a way to add up: person, folder, machine, runtime or workflow.")
 	}
 	scopes, err := s.reportScopes(ctx, user)
 	if err != nil {
@@ -119,10 +119,7 @@ func sameReportScope(a, b wire.ReportScope) bool {
 	if a.Kind != b.Kind {
 		return false
 	}
-	if a.Kind != wire.ReportScopeKindGroup {
-		return true
-	}
-	return a.Group != nil && b.Group != nil && *a.Group == *b.Group
+	return true
 }
 
 // viewMethod answers reports/views, reports/saveView and reports/deleteView for the caller.

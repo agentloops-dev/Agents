@@ -42,7 +42,7 @@ test("Machines: filters, the summary and each row's words", () => {
   assert.deepEqual(list.map(c.runningWords), ["—", "—", "3"]);
 });
 
-test("Report Policy: budgets as typed, and who may lead a group", () => {
+test("Report Policy: budgets as typed", () => {
   assert.equal(c.budgetValue("250"), 250);
   assert.equal(c.budgetValue(" $1,200.50 "), 1200.5);
   assert.equal(c.budgetValue(""), 0);
@@ -50,9 +50,6 @@ test("Report Policy: budgets as typed, and who may lead a group", () => {
   assert.equal(c.budgetValue("1.234"), null);
   assert.equal(c.budgetInput(250), "250");
   assert.equal(c.budgetInput(99.5), "99.50");
-  const people = [{ id: "a", kind: "person" }, { id: "b", kind: "person" }, { id: "bot", kind: "bot" }];
-  assert.deepEqual(c.leadCandidates({ everyone: true, members: [] }, people).map((p) => p.id), ["a", "b"]);
-  assert.deepEqual(c.leadCandidates({ everyone: false, members: ["b", "bot"] }, people).map((p) => p.id), ["b"]);
 });
 
 test("Requests: a channel identity's words", () => {

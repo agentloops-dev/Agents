@@ -1,7 +1,7 @@
 // Cost ▸ Reports (#1811), as the window's and the Remote's ReportsPane: usage, cost and time by
 // person, project, folder, machine and runtime, added up on the control plane from what each machine
 // sends each hour. Cost ▸ Reports shows the caller's own machines (Me, #2071); Reports ▸ Spend
-// has a scope, Me, a group or the organisation, and names it.
+// has a scope, Me or the organisation, and names it.
 import { useEffect, useMemo, useRef } from "preact/hooks";
 import { signal, useSignal } from "@preact/signals";
 import { go, route, routeHash } from "../route";
@@ -10,9 +10,9 @@ import type { Store } from "../model/store";
 import type { FeatureUsage, LineageForecast, ReportDelivery, LineageForecastAssumes, LineageForecastWhatIfEffect, LineageNode, MachineRef, ReportFormat, ReportPage, ReportRange, ReportRow, ReportScope, ReportScopeOption, ReportValue, ReportValueRow, ReportView,
   UsageReport } from "../protocol/generated";
 import { CallFailed } from "../wire/link";
-import { adoption, adoptionLine, rangeAsked, barCaption, adoptionNote, budgetWords, dimensionTitle, empty, exportName, groupNote, hiddenNote, line, meNote,
+import { adoption, adoptionLine, rangeAsked, barCaption, adoptionNote, budgetWords, dimensionTitle, dimensions, empty, exportName, groupViewNote, isGroupView, line, meNote,
   memberNote, noOutcomes, noWorkflows, outcomeLine, outcomeTotals, outcomesNote, rangeSpan, ranges, reportTotals, runtimeLine,
-  runtimesNote, sameScope, spendBarCaption, scopeKey, scopeNote, scopedDimensions, share, timeLine, timeNote, utcNote, waitingShare, weekTitle, workflowLine,
+  runtimesNote, sameScope, spendBarCaption, scopeKey, scopeNote, share, timeLine, timeNote, utcNote, waitingShare, weekTitle, workflowLine,
   workflowRows, workflowsNote, deleteViewWords, digestText, noCopy, noViews, noViewsHere, viewBy, viewWords, viewsNote } from "../model/reports";
 import type { OutcomeGroup, OutcomeOrder, ReportDimension, ReportGroup } from "../model/reports";
 import { featureLine, featureUnused, featuresNote, mergeFeatures, noFeatures } from "../model/features";
@@ -94,12 +94,11 @@ export function ReportsPane({ store, runtimeName, scope, seesMore, initial }: { 
       problem.value = sentence(error);
     }
   };
-  const ways = scopedDimensions(shown);
-  // A way the scope does not offer (a person, with nobody named) falls back to the first.
+  const ways = dimensions;
   const way = ways.includes(by.value) ? by.value : ways[0]!;
   // Added up once per report and way, not at each draw (#2057).
   const names = store.runtimes.value;
-  const totals = useMemo(() => shown ? reportTotals(shown.rows, way, runtimeName, shown.groupNames ?? {}) : null, [shown, way, names]);
+  const totals = useMemo(() => shown ? reportTotals(shown.rows, way, runtimeName) : null, [shown, way, names]);
   const row = (g: ReportGroup, bar: number | null) => (
     <li key={g.id} class={bar === null ? "report-total" : ""}>
       <span class={bar === null ? "strong" : ""}>{g.name}</span>
@@ -131,8 +130,6 @@ export function ReportsPane({ store, runtimeName, scope, seesMore, initial }: { 
             </ul>
           )}
           {totals.groups.length > 0 && <p class="quiet small">{spendBarCaption}</p>}
-          {shown.personsHidden && <p class="quiet small">{hiddenNote}</p>}
-          {way === "group" && <p class="quiet small">{groupNote}</p>}
           <p class="quiet small">{`${note(shown, scope, more)} ${utcNote}`}</p>
         </>
       )}
@@ -146,7 +143,7 @@ function note(shown: UsageReport, scope: ReportScope | undefined, more: boolean)
   if (!scope) return meNote(more);
   const of = shown.scope ?? scope;
   if (of.kind === "me" && !more) return memberNote;
-  return scopeNote(of, of.group ? shown.groupNames?.[of.group] : undefined);
+  return scopeNote(of);
 }
 
 type CountsKind = "outcomes" | "time" | "runtimes" | "workflows";
@@ -220,13 +217,13 @@ function SavedPage({ store, scopes }: { store: Store; scopes: readonly ReportSco
   useEffect(() => {
     store.link.call("reports/views", {}).then((r) => { views.value = r.views; }, (e: unknown) => { views.value = []; failed(e); });
   }, []);
-  const scopeName = (v: ReportView) => scopes.find((o) => scopeKey(o.scope) === scopeKey(v.scope))?.name ?? "A scope you no longer see";
+  const scopeName = (v: ReportView) => isGroupView(v) ? "Me" : scopes.find((o) => scopeKey(o.scope) === scopeKey(v.scope))?.name ?? "A scope you no longer see";
   const open = (v: ReportView) => {
     opened.value = v;
     go({ nav: "reports", section: v.page });
   };
   const digest = async (v: ReportView) => {
-    const text = store.link.call("reports/usage", { range: v.range, scope: v.scope }).then((r) => digestText(v, scopeName(v), r));
+    const text = store.link.call("reports/usage", { range: v.range, scope: isGroupView(v) ? { kind: "me" } : v.scope }).then((r) => digestText(v, scopeName(v), r));
     try {
       // Safari refuses a write that comes after an await (#2263): give the clipboard the promise of the text at once.
       if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
@@ -289,11 +286,10 @@ function CountsPane({ store, runtimeName, scope, kind, initial }: { store: Store
   const range = useSignal<ReportRange>(initial?.range ?? "week");
   const by = useSignal<ReportDimension>(initial?.by ?? page.by);
   const { problem, shown } = useReport(store, range.value, scope);
-  const scoped = scopedDimensions(shown);
-  const ways = kind === "workflows" ? ["workflow" as const, ...scoped] : scoped;
+  const ways = kind === "workflows" ? ["workflow" as const, ...dimensions] : dimensions;
   const way = ways.includes(by.value) ? by.value : ways[0]!;
   const names = store.runtimes.value;
-  const totals = useMemo(() => shown ? outcomeTotals(page.rows(shown.rows), way, page.order, runtimeName, shown.groupNames ?? {}) : null,
+  const totals = useMemo(() => shown ? outcomeTotals(page.rows(shown.rows), way, page.order, runtimeName) : null,
     [shown, way, names, kind]);
   const row = (g: OutcomeGroup, total: boolean) => (
     <li key={g.id} class={total ? "report-total" : ""}>
@@ -322,9 +318,7 @@ function CountsPane({ store, runtimeName, scope, kind, initial }: { store: Store
           )}
           {!page.nothing(totals.total) && <p class="quiet small">{page.caption}</p>}
           <p class="quiet small">{page.note}</p>
-          {shown.personsHidden && <p class="quiet small">{hiddenNote}</p>}
-          {way === "group" && <p class="quiet small">{groupNote}</p>}
-          {scope && <p class="quiet small">{`${scopeNote(scope, scope.group ? shown.groupNames?.[scope.group] : undefined)} ${utcNote}`}</p>}
+          {scope && <p class="quiet small">{`${scopeNote(scope)} ${utcNote}`}</p>}
         </>
       )}
     </div>
@@ -335,7 +329,7 @@ function CountsPane({ store, runtimeName, scope, kind, initial }: { store: Store
 function AdoptionPane({ store, scope, initial }: { store: Store; scope: ReportScope | undefined; initial?: Initial | undefined }) {
   const range = useSignal<ReportRange>(initial?.range ?? "month");
   const { problem, shown } = useReport(store, range.value, scope);
-  const weeks = useMemo(() => shown ? adoption(shown.rows, shown.personsHidden === true) : null, [shown]);
+  const weeks = useMemo(() => shown ? adoption(shown.rows) : null, [shown]);
   return (
     <div class="reports-pane">
       <div class="reports-head">
@@ -358,8 +352,7 @@ function AdoptionPane({ store, scope, initial }: { store: Store; scope: ReportSc
             </ul>
           )}
           <p class="quiet small">{adoptionNote}</p>
-          {shown.personsHidden && <p class="quiet small">{hiddenNote}</p>}
-          {scope && <p class="quiet small">{scopeNote(scope, scope.group ? shown.groupNames?.[scope.group] : undefined)}</p>}
+          {scope && <p class="quiet small">{scopeNote(scope)}</p>}
         </>
       )}
     </div>
@@ -443,7 +436,7 @@ function PlanningPane({ store, scope, initial }: { store: Store; scope: ReportSc
       {shown && !empty && shown.releases.length > 0 && <ul class="report-list">{shown.releases.map(row)}</ul>}
       {shown?.limited && <p class="quiet small">The 100 most costly of each.</p>}
       <p class="quiet small">{valueNote}</p>
-      {scope && <p class="quiet small">{scopeNote(scope, undefined)}</p>}
+      {scope && <p class="quiet small">{scopeNote(scope)}</p>}
     </div>
   );
 }
@@ -650,8 +643,8 @@ function Budget({ spent, budget }: { spent: number; budget: number }) {
   );
 }
 
-/** A page of Reports (#1804), the control plane's app beside the Workspace and the Console: Me, a
- * group the person leads (every group for an admin) or the organisation, as reports/scopes offers them. */
+/** A page of Reports (#1804), the control plane's app beside the Workspace and the Console: Me or the
+ * organisation, as reports/scopes offers them. */
 export function ReportsPage({ store, section, down }: { store: Store; section: Section; down: boolean }) {
   const scopes = useSignal<ReportScopeOption[] | null>(null);
   const picked = useSignal<string>("me");
@@ -680,6 +673,7 @@ export function ReportsPage({ store, section, down }: { store: Store; section: S
         <Choice label="Scope" class="report-scopes" value={option ? scopeKey(option.scope) : picked.value}
           options={list.map((o) => [scopeKey(o.scope), o.name] as const)} onPick={(k) => { picked.value = k; }} />
       )}
+      {view && isGroupView(view) && <p class="quiet small" role="status">{groupViewNote}</p>}
       {section.id === "features" ? <FeaturesPane store={store} />
         : scopes.value !== null && (section.id === "saved" ? <SavedPage store={store} scopes={list} />
         : section.id in countsPages

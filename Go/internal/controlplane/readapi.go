@@ -18,7 +18,7 @@ import (
 )
 
 // The read API (#2019, #1804 decision 4): a BI tool reads the organisation's reports with a
-// token an admin made, GET /v1/read/reports?range=month[&group=<id>][&format=json|csv|jsonl],
+// token an admin made, GET /v1/read/reports?range=month[&format=json|csv|jsonl],
 // the same rows as reports/usage and reports/export; with report=delivery, Reports ▸
 // Planning's delivery figures instead (#4555). A token reads that and nothing else:
 // no socket, no method, no write. It is shown once; the store keeps its SHA-256 only, as its
@@ -178,9 +178,6 @@ func (rt *readTokens) serve(w http.ResponseWriter, r *http.Request) {
 		period = wire.ReportRangeMonth
 	}
 	scope := &wire.ReportScope{Kind: wire.ReportScopeKindOrg}
-	if group := q.Get("group"); group != "" {
-		scope = &wire.ReportScope{Kind: wire.ReportScopeKindGroup, Group: &group}
-	}
 	if q.Get("report") == "delivery" {
 		rt.serveDelivery(w, r, scope, t.Made.By.User, now)
 		return
@@ -203,7 +200,7 @@ func (rt *readTokens) serve(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(report)
 	case "csv":
 		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-		w.Write([]byte(reportCSV(report.Rows, report.GroupNames)))
+		w.Write([]byte(reportCSV(report.Rows)))
 	case "jsonl":
 		w.Header().Set("Content-Type", "application/jsonl")
 		var b bytes.Buffer
@@ -219,7 +216,7 @@ func (rt *readTokens) serve(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// serveDelivery is GET /v1/read/reports?report=delivery[&group=<id>] (#4555): the scope's
+// serveDelivery is GET /v1/read/reports?report=delivery (#4555): the scope's
 // delivery figures, as Reports ▸ Planning's Delivery row has them, in JSON.
 func (rt *readTokens) serveDelivery(w http.ResponseWriter, r *http.Request, scope *wire.ReportScope, user string, now time.Time) {
 	if f := r.URL.Query().Get("format"); f != "" && f != "json" {

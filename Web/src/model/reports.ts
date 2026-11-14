@@ -5,9 +5,9 @@ import { money } from "./limits";
 import { timeWords } from "./time";
 import { tokenWords } from "./usage";
 
-export type ReportDimension = "person" | "project" | "folder" | "machine" | "runtime" | "group" | "workflow";
+export type ReportDimension = "person" | "project" | "folder" | "machine" | "runtime" | "workflow";
 export const dimensions: readonly ReportDimension[] = ["person", "project", "folder", "machine", "runtime"];
-export const dimensionTitle: Record<ReportDimension, string> = { person: "Person", project: "Project", folder: "Folder", machine: "Machine", runtime: "Runtime", group: "Group",
+export const dimensionTitle: Record<ReportDimension, string> = { person: "Person", project: "Project", folder: "Folder", machine: "Machine", runtime: "Runtime",
   workflow: "Workflow" };
 export const ranges: readonly ReportRange[] = ["day", "week", "month", "threeMonths"];
 
@@ -27,24 +27,22 @@ export const removedOwner = "A removed machine";
 export const noFolder = "No folder";
 export const noProject = "No project";
 export const noRuntime = "No runtime";
-export const noGroup = "No group";
 export const noWorkflow = "No workflow";
 export const empty = "Nothing was used in this time. Each machine sends what it used once an hour.";
 /** Whose spend the Cost page's pane shows (#2071). Reports ▸ Spend is named only to someone it
- * offers more than Me: an admin or a group's lead (#2200). */
+ * offers more than Me: an admin (#2200). */
 export function meNote(seesMore: boolean): string {
-  return seesMore ? "Your machines. A group’s and everyone’s are in Reports ▸ Spend." : memberNote;
+  return seesMore ? "Your machines. Everyone’s is in Reports ▸ Spend." : memberNote;
 }
-export const memberNote = "Your machines. An admin or a group’s lead sees more.";
+export const memberNote = "Your machines. An admin sees more.";
 /** Whether an answer is of the scope asked for: a late answer to an earlier scope is not shown (#2201). */
 export function sameScope(answer: ReportScope | undefined, asked: ReportScope): boolean {
   return scopeKey(answer ?? { kind: "me" }) === scopeKey(asked);
 }
-export function scopeNote(scope: ReportScope, groupName?: string): string {
+export function scopeNote(scope: ReportScope): string {
   switch (scope.kind) {
     case "me": return "Your machines.";
     case "org": return "Everyone’s machines.";
-    case "group": return `The machines of ${groupName ?? "the group"}’s people.`;
   }
 }
 export const utcNote = "Hours and days are UTC, so machines in other time zones add up.";
@@ -79,13 +77,11 @@ function add(g: ReportGroup, r: ReportRow) {
   g.waitingSeconds += r.waitingSeconds;
 }
 
-function keys(r: ReportRow, by: ReportDimension, runtimeName: (id: string) => string, groupNames: Record<string, string>): [string, string][] {
-  // A person in two groups counts in each (#1804).
-  if (by === "group") return r.groups?.length ? r.groups.map((g) => [g, groupNames[g] ?? g]) : [["", noGroup]];
+function keys(r: ReportRow, by: ReportDimension, runtimeName: (id: string) => string): [string, string][] {
   return [key(r, by, runtimeName)];
 }
 
-function key(r: ReportRow, by: Exclude<ReportDimension, "group">, runtimeName: (id: string) => string): [string, string] {
+function key(r: ReportRow, by: ReportDimension, runtimeName: (id: string) => string): [string, string] {
   switch (by) {
     case "workflow": return [r.workflow ?? "", r.workflow || noWorkflow];
     case "person": return [r.person, r.person ? r.personName || r.person : removedOwner];
@@ -97,12 +93,11 @@ function key(r: ReportRow, by: Exclude<ReportDimension, "group">, runtimeName: (
   }
 }
 
-export function reportTotals(rows: readonly ReportRow[], by: ReportDimension, runtimeName: (id: string) => string = (id) => id,
-  groupNames: Record<string, string> = {}): ReportTotals {
+export function reportTotals(rows: readonly ReportRow[], by: ReportDimension, runtimeName: (id: string) => string = (id) => id): ReportTotals {
   const groups = new Map<string, ReportGroup>();
   const total = blank("", "Total");
   for (const r of rows) {
-    for (const [id, name] of keys(r, by, runtimeName, groupNames)) {
+    for (const [id, name] of keys(r, by, runtimeName)) {
       const g = groups.get(id) ?? blank(id, name);
       groups.set(id, g);
       add(g, r);
@@ -140,23 +135,21 @@ export function exportName(range: ReportRange, format: ReportFormat, now: Date =
   return `report-${range}-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.${format}`;
 }
 
-// Scopes (#1804): one report, three zoom levels. Me is on all three clients; a group and the
-// organisation are the web's, in Reports.
+// Scopes (#1804): Me is on all three clients; the
+// organisation is the web's, in Reports.
 
-/** What a scope is called in a picker's value: "me", "org" or "group:<id>". */
+/** What a scope is called in a picker's value: "me" or "org". */
 export function scopeKey(scope: ReportScope): string {
-  return scope.kind === "group" ? `group:${scope.group ?? ""}` : scope.kind;
+  return scope.kind;
 }
 
-/** The ways to add a report up: with nobody named, neither person nor machine; past Me, by group too. */
-export function scopedDimensions(report: Pick<UsageReport, "scope" | "personsHidden"> | null): ReportDimension[] {
-  const hidden = report?.personsHidden === true;
-  const list = dimensions.filter((d) => !hidden || (d !== "person" && d !== "machine"));
-  return report?.scope && report.scope.kind !== "me" ? [...list, "group"] : list;
-}
+/** A saved view of a group lens, from before #5278, opens as Me, and says so. */
+export const groupViewNote = "This view was of a group. Reports has no group lens now, so it shows Me.";
 
-export const hiddenNote = "You see this group’s totals. An admin’s policy names no person or machine to a group’s leads.";
-export const groupNote = "A person in more than one group counts in each.";
+/** Whether a saved view is of a group lens, which Reports no longer has (#5278). */
+export function isGroupView(view: Pick<ReportView, "scope">): boolean {
+  return (view.scope.kind as string) === "group";
+}
 
 /** This month's spend at today's pace, to its last day (UTC). */
 export function forecastUSD(spent: number, now: Date = new Date()): number {
@@ -233,11 +226,11 @@ const firstCost = (g: OutcomeGroup) => Object.values(g.cost)[0] ?? 0;
 
 /** The rows added up by a dimension, sorted by `order`. */
 export function outcomeTotals(rows: readonly ReportRow[], by: ReportDimension, order: OutcomeOrder,
-  runtimeName: (id: string) => string = (id) => id, groupNames: Record<string, string> = {}): OutcomeTotals {
+  runtimeName: (id: string) => string = (id) => id): OutcomeTotals {
   const groups = new Map<string, OutcomeGroup>();
   const total = blankOutcome("", "Total");
   for (const r of rows) {
-    for (const [id, name] of keys(r, by, runtimeName, groupNames)) {
+    for (const [id, name] of keys(r, by, runtimeName)) {
       const g = groups.get(id) ?? blankOutcome(id, name);
       groups.set(id, g);
       addOutcome(g, r);
@@ -408,7 +401,7 @@ export const pageTitle: Record<ReportPage, string> = { spend: "Spend", outcomes:
   adoption: "Adoption", workflows: "Workflows", value: "Planning" };
 
 const isDimension = (by: string | undefined): by is ReportDimension =>
-  by !== undefined && ["person", "project", "folder", "machine", "runtime", "group", "workflow"].includes(by);
+  by !== undefined && ["person", "project", "folder", "machine", "runtime", "workflow"].includes(by);
 
 /** A view's way to add up, when it says one this build knows. */
 export function viewBy(view: Pick<ReportView, "by">): ReportDimension | undefined {

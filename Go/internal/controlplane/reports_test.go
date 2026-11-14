@@ -149,8 +149,8 @@ func TestReportsKeepWhatTheAgentsDid(t *testing.T) {
 	var csv wire.ReportExport
 	json.Unmarshal(call(t, admin, "", "reports/export", wire.ReportQuery{Range: wire.ReportRangeDay}), &csv)
 	lines := strings.Split(strings.TrimSpace(csv.Text), "\n")
-	if !strings.HasSuffix(lines[0], ",workflow,sessions,failedSessions,prsOpened,prsMerged,prsReverted,mergeSeconds,waits,workflowRuns,workflowFailures,groups") ||
-		!strings.HasSuffix(lines[1], ",nightly,2,1,1,1,0,3600,1,3,1,") || !strings.HasSuffix(lines[2], ",,,,,,,,,,,") {
+	if !strings.HasSuffix(lines[0], ",workflow,sessions,failedSessions,prsOpened,prsMerged,prsReverted,mergeSeconds,waits,workflowRuns,workflowFailures") ||
+		!strings.HasSuffix(lines[1], ",nightly,2,1,1,1,0,3600,1,3,1") || !strings.HasSuffix(lines[2], ",,,,,,,,,,") {
 		t.Fatalf("%v", lines)
 	}
 }
