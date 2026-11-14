@@ -6,7 +6,7 @@ import UIKit
 /// Working, Unread — then a group per folder, its sessions newest first with their state
 /// the row's mark, its workflows, and one Archived row opening a page; then the archived
 /// folders, folded, each with Unarchive (#343). Never more than two levels deep (#495).
-/// A folder's Sessions starts with New Session (#5267).
+/// New Session and New Machine are in the + at the top (#5447), and a folder's long press.
 ///
 /// The rules are the Mac's own, from `SidebarFolderFold`, `SidebarSmartRow`,
 /// `SidebarOrder` and `SidebarFolds` in AgentsKitCore: the same groups, order, pins and
@@ -156,7 +156,7 @@ struct RemoteSidebar: View {
 
             if !model.folders.isEmpty {
                 // The daily summary's page (#3721), while the daily summary is on. New Session is
-                // the first row of each folder's Sessions (#5267), and a folder's long press.
+                // in the + (#5447), and a folder's long press.
                 if model.dailySummarySettings?.mode.writesPages == true {
                     Section {
                         SummaryRowLabel(newest: model.summaryPages.first)
@@ -220,7 +220,6 @@ struct RemoteSidebar: View {
                         ForEach(model.machinesMaking) { making in
                             RemoteMakingMachineRow(making: making)
                         }
-                        NewMachineRow()
                     } header: {
                         Text("Machines")
                     }
@@ -311,7 +310,7 @@ struct RemoteSidebar: View {
         .background(Paper.sidebar)
         .toolbarBackground(Paper.sidebar, for: .navigationBar)
         .navigationTitle("Agent Loops")
-        // Add Folder… and Clone Git URL… on a machine (#4036), as the window's File menu.
+        // The + (#5447): New Session, Add Folder… and Clone Git URL… on a machine (#4036), New Machine.
         .toolbar {
             if !model.needsPairing {
                 ToolbarItem(placement: .primaryAction) { NewFolderMenu() }
@@ -933,18 +932,12 @@ struct RemoteFolderFold: View {
     /// only layout (#2381); not in a folder's own scene, whose group is Sessions already.
     @ViewBuilder
     private func sessionsFold(_ fold: SidebarFolderFold) -> some View {
-        // With New Session in it (#5267), a folder with no live session has the fold too.
-        let grouped = !inScene && (!fold.sessions.isEmpty || fold.showsNewSession)
+        let grouped = !inScene && !fold.sessions.isEmpty
         let isOpen = !grouped || fold.isSearching || folds.isOpen(key, .sessions)
         if grouped {
             SidebarFoldRow(title: "Sessions", count: fold.sessions.count, isOpen: isOpen) {
                 folds.set(key, .sessions, open: !isOpen)
             }
-        }
-        // New Session, the fold's first row (#5267), as Machines has New Machine. In a
-        // folder's own scene, the Sessions group's first row.
-        if isOpen && fold.showsNewSession {
-            NewSessionRow(folder: key, isNested: grouped)
         }
         // A closed fold has no rows at all (#237).
         ForEach(isOpen ? SidebarTree.rows(fold.sessions, in: model.work, folds: folds) : []) { row in
@@ -1200,38 +1193,6 @@ struct NewSessionButton: View {
             Label("New Session", icon: "plus")
         }
         .disabled(model.isStale)
-    }
-}
-
-/// The first row of a folder's Sessions (#5267; was the sidebar's first row, #495, #498): a
-/// new session in that folder, drawn as Machines' New Machine row. It carries the folder's
-/// own item, which the list lights while that form is open.
-private struct NewSessionRow: View {
-    @Environment(RemoteModel.self) private var model
-    let folder: FolderKey
-    /// In its folder's Sessions fold: one level in, as a session's row (#2312).
-    var isNested = false
-    /// The sessions' mark well, as `SidebarSessionRow` scales it.
-    @ScaledMetric private var scale: CGFloat = 1
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(icon: "square.and.pencil")
-                .sidebarMark(Paper.accent)
-                .frame(width: 20)
-                .accessibilityHidden(true)
-            Text("New Session")
-                .lineLimit(1)
-            Spacer(minLength: 0)
-        }
-        .padding(.leading, isNested ? 20 * scale + 10 : 0)
-        .appText(.supporting)
-        .foregroundStyle(model.isStale ? .secondary : .primary)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("New Session")
-        .accessibilityHint("Starts a new session in this folder")
-        .paperTag(SidebarItem.folder(folder))
-        .selectionDisabled(model.isStale)
     }
 }
 

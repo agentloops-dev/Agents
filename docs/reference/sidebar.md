@@ -89,6 +89,23 @@ in the sidebar.
 The choice is kept on your Mac, with your other display choices, so every client shows
 the same groups.
 
+## The + button
+
+The **+** over the sidebar is always there. On the Mac it is in the toolbar. On the
+iPhone and the iPad it is in the sidebar's top bar. On the web page it is at the head of
+the folders column. It holds:
+
+- **New Session.** It starts a session in the folder that you last started one in, or in
+  the folder that you chose. It puts the cursor in the prompt.
+- **Add Folder…** and **Clone Folder from Git URL…**, for this Mac or a server.
+- **New App…**, on the Mac and the web page.
+- **New Machine…**. With two or more machine providers, **New Machine on** lets you
+  choose the provider.
+
+The sidebar has no **New Session** or **New Machine** row. On the Mac, ⌘N and the
+**File** menu also start a session. A folder's own window has a **New Session** button
+over its sidebar.
+
 ## A folder's group
 
 The folder's name is the group's heading. The heading has no count: the **Sessions**
@@ -96,10 +113,9 @@ fold counts the sessions. A folder starts folded. Click or tap its
 heading to open it. In order, an open folder holds:
 
 - **Its pinned pages,** when it has some.
-- **Sessions,** a fold with a grey count of the folder's live sessions. Its first row is
-  **New Session**, which starts a session in this folder and puts the cursor in the prompt.
-  A folder with no live session still has the fold, with only **New Session** in it. A
-  search hides **New Session**. Then its sessions, newest started first. Its pinned
+- **Sessions,** a fold with a grey count of the folder's live sessions, newest started
+  first. A folder with no live session has no fold. To start a session in the folder, use
+  the folder's menu, or **New Session** in the **+**. Its pinned
   sessions are in **Pinned** instead. Each row's mark says its state. See
   [Statuses and groups](statuses.md).
 - **Workflows,** a fold with a grey count of the folder's workflows. It is closed at

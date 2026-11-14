@@ -215,8 +215,8 @@ export function SectionPage({ store, section, down }: { store: Store; section: E
   useEffect(() => {
     if (section === "status") for (const host of online) void store.loadEvents(host);
   }, [section, online.join(",")]);
-  // The Machines header (#3974): its menu has New Machine and registers one. New Machine itself is the group's
-  // last row, + New Machine, as the Remote's (#4034, #5265); a click opens its sheet (#4634).
+  // The Machines header (#3974): its menu has New Machine and registers one. New Machine is also in the sidebar's
+  // + (#5447); either opens its sheet (#4634).
   const machinesHead = (group: string) => section === "machines" && group === "Machines";
   // With two or more providers, New Machine names the default, and New Machine on ‹name› opens the sheet on another (#3979).
   useEffect(() => {
@@ -257,13 +257,6 @@ export function SectionPage({ store, section, down }: { store: Store; section: E
                   join={store.machineJoins.value[`${row.provider}/${row.workspace}`]}
                   onDelete={async () => { if (await ask(deleteMakingQuestion(row))) void store.deleteWorkspace(row.provider, row.workspace); }}
                   onJoin={() => void joinAsking(store, row)} />)}
-              {machinesHead(group) && (
-                <button type="button" class="sub-app-row new-machine-row" title="New Machine: choose what the provider makes, starting from the options used last"
-                  onClick={() => store.newMachine()}
-                  onContextMenu={(e) => openContextMenu(e, headItems().slice(0, -1))}>
-                  <span><Icon name="plus" class="new-mark" /> New Machine</span>
-                </button>
-              )}
             </div>
           ))}
         </nav>
