@@ -92,6 +92,16 @@ enum Paper {
     static let forgeFillClosed = Color(light: 0xCF222E, dark: 0xDA3633)
     static let forgeFillDraft = Color(light: 0x59636E, dark: 0x6E7681)
 
+    /// A diff's added and removed lines (`design/tokens.json`'s `color.diff`, #5474): the
+    /// line's wash, the bar at its edge, and the mark on the words that changed. The + and −
+    /// signs always go with the colour.
+    static let diffAddedWash = Color(light: 0xE6FFEC, dark: 0x1D2E1F)
+    static let diffAddedBar = Color(light: 0x4AC26B, dark: 0x2EA043)
+    static let diffAddedWord = Color(light: 0xABF2BC, dark: 0x22502A)
+    static let diffRemovedWash = Color(light: 0xFFEBE9, dark: 0x3B2220)
+    static let diffRemovedBar = Color(light: 0xFF8182, dark: 0xF85149)
+    static let diffRemovedWord = Color(light: 0xFFCECB, dark: 0x73302C)
+
     /// Corner radii: code, control (chips, rail), card (rows, wells), and a pill for a
     /// state badge.
     enum Radius {
