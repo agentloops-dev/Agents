@@ -224,6 +224,7 @@ public enum Capability {
     public static let views1 = "views/1"
     public static let wake1 = "wake/1"
     public static let workFeatures1 = "work.features/1"
+    public static let workSuggestLeads1 = "work.suggest-leads/1"
     public static let workTimeline1 = "work.timeline/1"
     public static let workflow1 = "workflow/1"
     public static let workflows1 = "workflows/1"
@@ -616,7 +617,9 @@ public enum Capability {
         "wake/set": "wake/1",
         "wake/settings": "wake/1",
         "wake/state": "wake/1",
+        "work/dismiss-lead": "work.suggest-leads/1",
         "work/features": "work.features/1",
+        "work/suggest-leads": "work.suggest-leads/1",
         "work/timeline": "work.timeline/1",
         "workflows/approve": "workflows/1",
         "workflows/archive": "workflows/1",

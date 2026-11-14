@@ -15119,6 +15119,14 @@ export type Weekday =
   | "sat";
 
 /**
+ * work/dismiss-lead (#5458): hide an epic from the suggestions until the epic changes or a lead of
+ * it ends. The list is the person's, kept on this machine.
+ */
+export interface WorkDismissLeadRequest {
+  node: LineageNode;
+}
+
+/**
  * A feature in work/features (#4586): feature is it as forge/features says it. epics are its open
  * epics, the newest first, each with where it is in its plan and its children. loose are its open
  * issues that are not epics and have no parent (of the newest 500 open issues), the newest update
@@ -15171,6 +15179,30 @@ export interface WorkFeaturesRequest {
 }
 
 /**
+ * An open epic with no lead, as work/suggest-leads says it (#5458, epic #5457). node, title and url
+ * are the epic's; folder is a folder on this machine on its repo; milestone is its name and due its
+ * due date (YYYY-MM-DD) where the forge says them. done and total are its children closed and all
+ * (0 and 0 for a standing epic, whose plan is a query). high says an open child has the label
+ * priority:high, and ui that an open child is a story (a person can see or use it: a client
+ * changes); the order says why. start is the new-agent form Start lead fills: the prompt, the
+ * labels #<n> and lead, and no worktree. It starts nothing.
+ */
+export interface WorkLeadSuggestion {
+  node: LineageNode;
+  title: string;
+  url?: string;
+  folder?: string;
+  milestone?: string;
+  due?: string;
+  done: number;
+  total: number;
+  high?: boolean;
+  ui?: boolean;
+  standing?: boolean;
+  start: ForgeStart;
+}
+
+/**
  * How a turn ended (#1916): only a question needs the person. A value this build does not know,
  * such as an old record's `blocked`, `stuck` or `partly_done`, reads as `done`.
  */
@@ -15185,6 +15217,27 @@ export interface WorkReport {
   message: string;
   at: WireDate;
   block?: Block;
+}
+
+/**
+ * work/suggest-leads (#5458): New Session's Suggested section, from the forge's open epics and this
+ * machine's sessions. suggestions are at most 3 epics with no lead (no session that is not archived
+ * has both #<epic> and lead), ranked: an epic with priority:high children first, then one with UI
+ * children, then the earliest milestone due date, then the one nearest to done. more is how many
+ * more there are, for N more in Work. An epic the person dismissed is left out until it changes or
+ * a lead has ended. errors say a forge that could not be read.
+ */
+export interface WorkSuggestLeads {
+  suggestions: WorkLeadSuggestion[];
+  more: number;
+  errors?: ForgeListError[];
+}
+
+/**
+ * work/suggest-leads (#5458): the epics of every folder on this machine, or of one folder's repo.
+ */
+export interface WorkSuggestLeadsRequest {
+  folder?: string;
 }
 
 /**
@@ -16133,7 +16186,9 @@ export interface Methods {
   "views/show": { params: ViewShowRequest; result: Empty };
   "wake/set": { params: WakeSettings; result: WakeSettings };
   "wake/settings": { params: Empty; result: WakeSettings };
+  "work/dismiss-lead": { params: WorkDismissLeadRequest; result: ForgeDone };
   "work/features": { params: WorkFeaturesRequest; result: WorkFeatures };
+  "work/suggest-leads": { params: WorkSuggestLeadsRequest; result: WorkSuggestLeads };
   "work/timeline": { params: WorkTimelineRequest; result: WorkTimeline };
   "workflows/approve": { params: WorkflowApproveRequest; result: WorkflowSummary };
   "workflows/archive": { params: WorkflowArchiveRequest; result: WorkflowSummary };
@@ -16585,7 +16640,9 @@ export const MethodTarget = {
   "views/show": "host",
   "wake/set": "host",
   "wake/settings": "host",
+  "work/dismiss-lead": "host",
   "work/features": "host",
+  "work/suggest-leads": "host",
   "work/timeline": "host",
   "workflows/approve": "host",
   "workflows/archive": "host",
@@ -17896,11 +17953,15 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   WebPushSubscription: { required: [], optional: ["endpoint", "p256dh", "auth"] },
   WebRemoteStatus: { required: ["port", "served"], optional: ["reason", "detail"] },
   WebServe: { required: ["on"], optional: [] },
+  WorkDismissLeadRequest: { required: ["node"], optional: [] },
   WorkFeature: { required: ["feature", "epics", "loose"], optional: [] },
   WorkFeatureEpic: { required: ["item", "steps"], optional: ["step", "blockedOutside", "forecast", "children"] },
   WorkFeatures: { required: ["features"], optional: ["approvals", "errors"] },
   WorkFeaturesRequest: { required: [], optional: ["folder", "board"] },
+  WorkLeadSuggestion: { required: ["node", "title", "done", "total", "start"], optional: ["url", "folder", "milestone", "due", "high", "ui", "standing"] },
   WorkReport: { required: ["outcome", "message", "at"], optional: ["block"] },
+  WorkSuggestLeads: { required: ["suggestions", "more"], optional: ["errors"] },
+  WorkSuggestLeadsRequest: { required: [], optional: ["folder"] },
   WorkTimeline: { required: ["epics", "releases"], optional: ["timeZone", "backtest", "errors"] },
   WorkTimelineBacktest: { required: ["error", "width", "cuts", "holds", "epics", "at"], optional: [] },
   WorkTimelineChild: { required: ["item", "createdAt"], optional: ["stateReason", "startedAt", "closedAt", "waitsForPerson", "forecastAt"] },
