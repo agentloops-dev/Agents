@@ -26,6 +26,10 @@ func TestALimitInWords(t *testing.T) {
 		{"codex", c(429), "Too many requests", "", limitRateLimited},
 		{"codex", c(-32603), "You have exhausted your daily quota", "", limitSpent},
 		{"copilot", nil, "", "You have exceeded your monthly quota for premium requests.", limitSpent},
+		// Copilot 1.0.107 and later put an Info notice first, in the same message (#5125).
+		{"copilot", nil, "", "Info: Disabled tools: dynamic_workflows_manage, run_dynamic_workflow, session_store_sqlError: You have exceeded your monthly quota (Request ID: F68F:310609)", limitSpent},
+		{"copilot", nil, "", "Info: Disabled tools: a\nInfo: Model changed\nError: You have exceeded your monthly quota", limitSpent},
+		{"copilot", nil, "", "I fixed the check. The issue said: Error: You have exceeded your monthly quota", limitNone},
 		{"grok", nil, "", "Error: Usage balance exhausted", limitSpent},
 		{"opencode", nil, "", "Free usage limit reached. Free models work in OpenCode (https://opencode.ai)", limitSpent},
 		{"claude", nil, "", "You've hit your limit, says the doc I read.", limitNone},

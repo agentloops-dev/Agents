@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"log"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -196,6 +197,13 @@ func (l limit) resetting(at *wire.Date) limit {
 	return l
 }
 
+// copilotQuotaSpent is Copilot's refusal for a spent plan. It is the start of the reply,
+// after the "Info: …" notices that Copilot 1.0.107 and later put first in the same
+// message, as "Info: Disabled tools: dynamic_workflows_manage, run_dynamic_workflowError:
+// You have exceeded your monthly quota" (#5125). The quota words later in a reply that
+// does other work are not a refusal.
+var copilotQuotaSpent = regexp.MustCompile(`^(?:Info: [^\n]*?\s*)*(?:Error: )?You have exceeded your monthly quota`)
+
 // wordsLimit is the words layer: a refusal's code and message, and the turn's own words.
 func wordsLimit(runtimeID string, code *int, message, said string) limitKind {
 	saids := []string{}
@@ -208,8 +216,7 @@ func wordsLimit(runtimeID string, code *int, message, said string) limitKind {
 	says := func(f func(string) bool) bool { return slices.ContainsFunc(saids, f) }
 	switch runtimeID {
 	case "copilot":
-		const q = "You have exceeded your monthly quota"
-		if says(func(s string) bool { return strings.HasPrefix(s, q) || strings.HasPrefix(s, "Error: "+q) }) {
+		if says(copilotQuotaSpent.MatchString) {
 			return limitSpent
 		}
 	case "cursor":
