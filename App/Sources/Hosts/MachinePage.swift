@@ -30,9 +30,17 @@ struct MachinePage: View {
             HStack(alignment: .firstTextBaseline, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(name).appText(.reading)
-                    Text(offline ? "Offline" : "Online")
-                        .appText(.supporting)
-                        .foregroundStyle(offline ? StateTint.failure.style(or: .secondary) : AnyShapeStyle(.secondary))
+                    if let setup = model.hosts.controlRows[host]?.setup, !MachineSetupWords.foldedAway(setup) {
+                        // The chip (#5357): Setting up · 7 of 8, Set-up failed, Ready · 3 min 42 s.
+                        Text(MachineSetupWords.chip(setup))
+                            .appText(.supporting)
+                            .foregroundStyle(MachineSetupWords.failedStep(setup) != nil
+                                             ? StateTint.failure.style(or: .secondary) : AnyShapeStyle(.secondary))
+                    } else {
+                        Text(offline ? "Offline" : "Online")
+                            .appText(.supporting)
+                            .foregroundStyle(offline ? StateTint.failure.style(or: .secondary) : AnyShapeStyle(.secondary))
+                    }
                 }
                 Spacer(minLength: 0)
                 if host == .mac {
@@ -48,6 +56,9 @@ struct MachinePage: View {
 
             ScrollViewReader { proxy in
                 Form {
+                    if let row = model.hosts.controlRows[host], let setup = row.setup {
+                        MachineSetupSection(host: host, row: row, setup: setup)
+                    }
                     if offline {
                         Section {
                             Text("\(name) is offline, so it can’t say how it is doing now.")

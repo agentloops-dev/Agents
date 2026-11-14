@@ -8,6 +8,7 @@ enum MachineNeedWords {
     static func line(_ need: MachineNeed, name: String, row: DaemonAPI.ControlMachine?) -> String {
         switch need {
         case .offline, .stopped: OfflineWords.footLine(name: name, row: row)
+        case .settingUp(let setup): MachineSetupWords.sidebarLine(setup)
         case .setupFailed: HostProblem.installFailed("").sentence(name: name, label: name)
         case .disk(let disk): DiskSpace.needWords(disk)
         case .capacity(let level): CapacityWords.level(level) ?? ""

@@ -9,6 +9,8 @@ public extension DaemonAPI.Method {
     static let hostsCheckAgain = "machines/checkAgain"
     static let hostsUpdate = "machines/update"
     static let hostsRemove = "machines/remove"
+    /// Try Again on a machine's set-up (#5357).
+    static let hostsRetrySetup = "machines/retrySetup"
     /// `{host, from, runtime, allowed}`: whether `host` may use `from`'s sign-in for a
     /// runtime, relayed through the control plane (058, T091). An operator's, after the
     /// window asked the person.
@@ -276,6 +278,51 @@ public extension DaemonAPI {
         }
     }
 
+    /// One step of a machine's set-up (#5357), as `MachineSetupStep` on the wire.
+    struct MachineSetupStep: Codable, Sendable, Hashable, Identifiable {
+        public enum State: String, Codable, Sendable {
+            case waiting, running, done, failed
+            case needsYou = "needs-you"
+        }
+
+        /// `create`, `join`, `install`, `compare`, `runtimes`, `projects`, `signIn` or `smoke`.
+        public var id: String
+        public var state: State
+        public var startedAt: Date?
+        public var endedAt: Date?
+        /// One line of what it is doing or did.
+        public var detail: String?
+        /// Why it failed, in the words of the provider or the machine.
+        public var error: String?
+        public var fromPool: Bool?
+        public var slower: Bool?
+
+        public init(id: String, state: State, startedAt: Date? = nil, endedAt: Date? = nil, detail: String? = nil,
+                    error: String? = nil, fromPool: Bool? = nil, slower: Bool? = nil) {
+            self.id = id
+            self.state = state
+            self.startedAt = startedAt
+            self.endedAt = endedAt
+            self.detail = detail
+            self.error = error
+            self.fromPool = fromPool
+            self.slower = slower
+        }
+    }
+
+    /// How a machine's set-up stands (#5357): `MachineSetup` on the wire.
+    struct MachineSetup: Codable, Sendable, Hashable {
+        public var steps: [MachineSetupStep]
+        public var startedAt: Date
+        public var readyAt: Date?
+
+        public init(steps: [MachineSetupStep], startedAt: Date, readyAt: Date? = nil) {
+            self.steps = steps
+            self.startedAt = startedAt
+            self.readyAt = readyAt
+        }
+    }
+
     /// One row of `machines/list`.
     struct ControlMachine: Codable, Sendable, Hashable, Identifiable {
         public var id: MachineRef
@@ -307,6 +354,8 @@ public extension DaemonAPI {
         /// Of the control plane's required capabilities, the ones it does not have: it is
         /// then `needsUpdate`.
         public var missing: [String]?
+        /// How its set-up stands: the eight steps (#5357); nil for a machine that was never set up by Agents.
+        public var setup: MachineSetup?
 
         /// Whether the host answers calls: `online`, or `needsUpdate`, which is connected and
         /// serves what its list says (#1771). Its features are gated by `has(_:)`.

@@ -8,6 +8,8 @@ public enum MachineNeed: Equatable, Sendable {
     /// Its provider's workspace is stopped, starting, stopping or failed to start (#691).
     case stopped
     case setupFailed
+    /// Its eight steps are running or one failed (#5357): said before all else, since it has not joined yet.
+    case settingUp(DaemonAPI.MachineSetup)
     /// Its worst disk that is low or almost full (#3928): why its icon is red.
     case disk(DiskAlarm)
     /// Near or at capacity (#4748): its icon amber at near and red at full.
@@ -22,6 +24,7 @@ public enum MachineNeed: Equatable, Sendable {
     /// `capacity/changed` last said it.
     public static func most(row: DaemonAPI.ControlMachine?, offline: Bool, runtimes: [RuntimeStatus],
                             disks: [DiskAlarm] = [], capacity: DaemonAPI.CapacityLevel? = nil) -> MachineNeed? {
+        if let setup = row?.setup, MachineSetupWords.isSettingUp(setup) { return .settingUp(setup) }
         if offline {
             if let row, let workspace = row.workspace,
                workspace.problem != nil || ["stopped", "starting", "stopping"].contains(row.state) {
