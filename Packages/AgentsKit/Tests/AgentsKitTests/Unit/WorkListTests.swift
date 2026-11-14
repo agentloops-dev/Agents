@@ -56,6 +56,21 @@ struct WorkListTests {
         #expect(WorkList.errorWords(.init(forge: "forgejo", message: "not connected"), machine: "Studio") == "Forgejo on Studio: not connected")
     }
 
+    @Test func oneMachinesAnswerForAForgeIsEnough() {
+        typealias E = DaemonAPI.ForgeListError
+        let down = E(forge: "github", message: "rate limited")
+        let linear = E(forge: "linear", message: "not connected")
+        // Studio read GitHub; the Mac could not, and its error goes. The Linear error stays: no machine read Linear.
+        #expect(WorkList.shownErrors([([], [down, linear]), (["github:issue:alexec/agents#1"], [])]) == [[linear], []])
+        // A machine that did not answer shows only when no machine answered.
+        let offline = E(forge: "", message: "offline")
+        #expect(WorkList.shownErrors([([], [offline]), ([], [])]) == [[], []])
+        #expect(WorkList.shownErrors([([], [offline]), ([], [offline])]) == [[offline], [offline]])
+        // One machine alone keeps its errors, also for a forge it read some of.
+        #expect(WorkList.shownErrors([(["github:alexec/Agents#1"], [down])]) == [[down]])
+        #expect(WorkList.refForge("github:pr:alexec/agents#1") == "github")
+    }
+
     @Test func aBitbucketIssuesRowHasItsRepoAndOpenOnBitbucket() {
         let row = WorkList.Row(.init(node: Node(kind: "issue", ref: "bitbucket:walkalex/app#3"), title: "Export", state: "open",
                                      updatedAt: day), on: .mac)
