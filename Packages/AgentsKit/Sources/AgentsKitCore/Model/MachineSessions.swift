@@ -8,7 +8,7 @@ public struct MachineSessions: Sendable {
     public enum Group: String, CaseIterable, Sendable {
         case working = "Working", waiting = "Waiting", done = "Done"
 
-        init?(_ group: AgentGroup) {
+        public init?(_ group: AgentGroup) {
             switch group {
             case .running: self = .working
             case .needsAttention, .blocked, .waiting: self = .waiting
