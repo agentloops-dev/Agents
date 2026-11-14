@@ -11,9 +11,11 @@ import { hostAnswers } from "./capabilities";
 import { keepWork, keptWork, keptWorkRead } from "./localCopy";
 import { mark } from "./marks";
 import {
-  anyFilter, defaultSort, filterRows, forgeListRequest, fromForge, lineageRow, mergeBoards, mergeForge, neighbours, projectRepos, sortRows,
+  filterRows, forgeListRequest, fromForge, lineageRow, mergeBoards, mergeForge, neighbours, parseWorkQuery, projectRepos, sortRows,
+  workQuery,
   type Neighbours, type WorkFilter, type WorkKind, type WorkProject, type WorkProjectRepos, type WorkRow, type WorkSort, type WorkState,
 } from "./work";
+import { rememberEach, remembered } from "./workRemembered";
 
 /** How many pages of reports/nodes a list reads for its lineage: at most 500 nodes. */
 const lineagePages = 5;
@@ -68,12 +70,16 @@ export const placeKey = (kind: WorkKind, ref: string) => `${kind} ${ref}`;
 export function workList(kind: WorkKind): WorkListState {
   let l = lists.get(kind);
   if (!l) {
+    // It opens with the filters and the sort it had when last left (#5451).
+    const kept = parseWorkQuery(remembered(kind) ?? "", kind);
     l = {
-      kind, filter: signal(anyFilter), projects: signal([]), sort: signal<WorkSort>(defaultSort(kind)), lists: signal(null), loading: signal(false), lineage: signal([]),
+      kind, filter: signal(kept.filter), projects: signal([]), sort: signal<WorkSort>(kept.sort), lists: signal(null), loading: signal(false), lineage: signal([]),
       lineageCursor: signal(undefined), problem: signal(null), more: signal(false), moreFailed: signal(null), asked: signal(0), opened: signal(undefined),
       read: undefined, fromDevice: signal(false), readAt: signal(undefined), shownFor: undefined,
     };
     lists.set(kind, l);
+    const { filter, sort } = l;
+    rememberEach(kind, () => workQuery(filter.value, sort.value, kind));
   }
   return l;
 }
