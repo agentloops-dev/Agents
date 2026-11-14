@@ -37,7 +37,7 @@ type DeployFact struct {
 
 // DeployFigures is a target's four figures.
 type DeployFigures struct {
-	Ended, Failed, Rollbacks                                      int
+	Ended, Failed, Rollbacks                                       int
 	DeploymentFrequency, LeadTime, ChangeFailureRate, RecoveryTime wire.LineageDeliveryFigure
 }
 
