@@ -102,6 +102,7 @@ const eventMeanings: Record<string, string> = {
   "agent.started": "An agent in this folder started working",
   "agent.finished": "An agent in this folder ended a turn having done its work",
   "agent.asked_permission": "An agent in this folder is asking for permission",
+  "agent.permission_answered": "The session that started an agent in this folder answered that agent's permission request with answer_permission",
   "agent.asked_form": "An agent in this folder raised a form to fill in",
   "agent.waiting": "An agent in this folder ended its turn waiting on something",
   "agent.stopped": "An agent in this folder was stopped before finishing",
@@ -371,7 +372,8 @@ const context = ["labels", "runtime", "started_by"];
 const catalogue: Record<string, { scope: "mac" | "folder" | "either"; details: string[] }> = {
   "agent.started": { scope: "folder", details: ["agent", ...context] },
   "agent.finished": { scope: "folder", details: ["agent", "outcome", "afterwards", ...context] },
-  "agent.asked_permission": { scope: "folder", details: ["agent", ...context] },
+  "agent.asked_permission": { scope: "folder", details: ["agent", "request", "tool", ...context] },
+  "agent.permission_answered": { scope: "folder", details: ["agent", "by", "by_title", "answer", "request", "tool", ...context] },
   "agent.asked_form": { scope: "folder", details: ["agent", ...context] },
   "agent.waiting": { scope: "folder", details: ["agent", "waiting_on", ...context] },
   "agent.stopped": { scope: "folder", details: ["agent", "by", ...context] },

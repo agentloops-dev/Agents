@@ -117,6 +117,16 @@ type live struct {
 type pendingPermission struct {
 	req    wire.PermissionRequest
 	answer chan string
+	// by is the session that answered it with answer_permission (#5440); nil for the
+	// person. taken is set by the first answer, so a second one never names itself.
+	by    *permissionAnswerer
+	taken bool
+}
+
+// permissionAnswerer is the session that answered a helper's card (#5440).
+type permissionAnswerer struct {
+	agent wire.UUID
+	title string
 }
 
 // noteShown is show_file's mark on the turn in flight (#1802).
@@ -1496,7 +1506,8 @@ func (l *live) Permission(ctx context.Context, p sdk.RequestPermissionRequest) s
 	d.record(l.id, wire.TranscriptEntryKind{PermissionAsked: &wire.TranscriptEntryKindPermissionAsked{Value: req}})
 	d.setState(l.id, wire.AgentStateWaitingOnUser)
 	Broadcast(d, wire.NotifyAgentPermission, wire.PermissionNotification{AgentID: l.id, Request: &req, RequestID: req.ID})
-	d.raiseAgentEvent("agent.asked_permission", l.id, "is asking for permission.", nil)
+	d.raiseAgentEvent("agent.asked_permission", l.id, "is asking for permission.",
+		map[string]string{"request": string(req.ID), "tool": req.ToolCall.Title})
 	d.reconsider()
 	var option string
 	select {
@@ -1505,6 +1516,7 @@ func (l *live) Permission(ctx context.Context, p sdk.RequestPermissionRequest) s
 	}
 	l.mu.Lock()
 	delete(l.pending, req.ID)
+	by := pp.by
 	l.mu.Unlock()
 	if option != "" {
 		name := option
@@ -1513,8 +1525,15 @@ func (l *live) Permission(ctx context.Context, p sdk.RequestPermissionRequest) s
 				name = o.Name
 			}
 		}
-		d.record(l.id, wire.TranscriptEntryKind{PermissionAnswered: &wire.TranscriptEntryKindPermissionAnswered{OptionID: option, OptionName: &name}})
+		answered := &wire.TranscriptEntryKindPermissionAnswered{OptionID: option, OptionName: &name}
+		if by != nil {
+			answered.AnsweredBy, answered.AnsweredByTitle = &by.agent, &by.title
+		}
+		d.record(l.id, wire.TranscriptEntryKind{PermissionAnswered: answered})
 		l.noteDenied(req, option)
+		if by != nil {
+			d.noteLeadAnswered(l.id, req, option, *by)
+		}
 	}
 	Broadcast(d, wire.NotifyAgentPermission, wire.PermissionNotification{AgentID: l.id, RequestID: req.ID})
 	d.reconsider()
@@ -1599,19 +1618,31 @@ func (l *live) Served(kind, detail string) {
 }
 
 func (l *live) answer(permissionID wire.UUID, option string) bool {
+	return l.answerAs(permissionID, option, nil)
+}
+
+// answerAs answers a card, the person's (by nil) or the session's that started this one
+// (#5440): false when it is not waiting, the option is not one of its, or another answer
+// or a stop got there first.
+func (l *live) answerAs(permissionID wire.UUID, option string, by *permissionAnswerer) bool {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	pp := l.pending[permissionID]
-	l.mu.Unlock()
 	if pp == nil {
 		return false
 	}
 	for _, o := range pp.req.Options {
 		if o.OptionID == option {
+			if pp.taken {
+				return by == nil // the person's second tap is no error
+			}
 			select {
 			case pp.answer <- option:
+				pp.taken, pp.by = true, by
+				return true
 			default:
+				return by == nil
 			}
-			return true
 		}
 	}
 	return false

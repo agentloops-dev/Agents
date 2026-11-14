@@ -64,7 +64,9 @@ extension TranscriptEntry.Kind {
             return .permissionAsked(request)
         case "permissionAnswered":
             return .permissionAnswered(optionID: payload["optionID"]?.stringValue ?? "",
-                                       optionName: payload["optionName"]?.stringValue)
+                                       optionName: payload["optionName"]?.stringValue,
+                                       answeredBy: payload["answeredBy"]?.stringValue,
+                                       answeredByTitle: payload["answeredByTitle"]?.stringValue)
         case "optionChanged":
             return .optionChanged(id: payload["id"]?.stringValue ?? "",
                                   value: payload["value"] ?? .null)
@@ -157,9 +159,11 @@ extension TranscriptEntry.Kind {
             return ["notice": ["_0": (try? JSONValue.encoding(notice)) ?? .null]]
         case .permissionAsked(let request):
             return ["permissionAsked": ["_0": (try? JSONValue.encoding(request)) ?? .null]]
-        case .permissionAnswered(let optionID, let optionName):
+        case .permissionAnswered(let optionID, let optionName, let answeredBy, let answeredByTitle):
             var payload: [String: JSONValue] = ["optionID": .string(optionID)]
             if let optionName { payload["optionName"] = .string(optionName) }
+            if let answeredBy { payload["answeredBy"] = .string(answeredBy) }
+            if let answeredByTitle { payload["answeredByTitle"] = .string(answeredByTitle) }
             return ["permissionAnswered": .object(payload)]
         case .optionChanged(let id, let value):
             return ["optionChanged": ["id": .string(id), "value": value]]

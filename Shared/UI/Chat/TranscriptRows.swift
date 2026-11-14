@@ -443,9 +443,10 @@ private struct EntryRow: View {
         case .permissionAsked(let request):
             RecordLine(icon: LineGlyph.asked, head: "Asked", detail: request.toolCall.title)
 
-        case .permissionAnswered(let optionID, let name):
-            // An answered Ask leaves one Line (#5036): "You chose ‹option›".
-            RecordLine(icon: LineGlyph.answered, lead: "You chose", head: name ?? optionID)
+        case .permissionAnswered(let optionID, let name, let answeredBy, let answeredByTitle):
+            // An answered Ask leaves one Line (#5036): "You chose ‹option›", or the
+            // session that started this one when it answered (#5440): "‹Lead› chose ‹option›".
+            RecordLine(icon: LineGlyph.answered, lead: TranscriptEntry.chooser(answeredBy: answeredBy, title: answeredByTitle), head: name ?? optionID)
 
         case .optionChanged:
             // Dropped by `TranscriptEntry.display` before it gets here. Plumbing: the

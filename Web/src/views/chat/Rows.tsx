@@ -436,8 +436,10 @@ function entryBody(entry: TranscriptEntry, from: (sender: MessageSender | undefi
       return <RecordLine icon={lineGlyph.asked} head="Asked" detail={fields(entry, "permissionAsked")!._0.toolCall.title} />;
     case "permissionAnswered": {
       const answered = fields(entry, "permissionAnswered")!;
-      // An answered Ask leaves one Line (#5036): "You chose ‹option›".
-      return <RecordLine icon={lineGlyph.answered} lead="You chose" head={answered.optionName ?? answered.optionID} />;
+      // An answered Ask leaves one Line (#5036): "You chose ‹option›", or "‹Lead› chose
+      // ‹option›" when the session that started this one answered it (#5440).
+      return <RecordLine icon={lineGlyph.answered} lead={chooser(answered.answeredBy, answered.answeredByTitle)}
+        head={answered.optionName ?? answered.optionID} />;
     }
     case "stateChanged": {
       const state = fields(entry, "stateChanged")!;
@@ -600,3 +602,10 @@ export const TurnView = memo(function TurnView({ turn, focusedRun, fetched, fetc
     </article>
   );
 });
+
+/** Who chose on an answered permission card (#5036, #5440): TranscriptEntry.chooser's words. */
+function chooser(answeredBy: string | undefined, title: string | undefined): string {
+  if (answeredBy === undefined) return "You chose";
+  const name = (title ?? "").trim();
+  return `${name === "" ? "The session that started it" : name} chose`;
+}

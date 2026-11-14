@@ -15461,6 +15461,12 @@ type TranscriptEntryKindPermissionAnswered struct {
 	OptionID string `json:"optionID"`
 
 	OptionName *string `json:"optionName,omitzero"`
+
+	// The session that answered it: the one that started this agent, with answer_permission (#5440). Absent when the person answered.
+	AnsweredBy *UUID `json:"answeredBy,omitzero"`
+
+	// That session's title when it answered, for "<title> chose …" (#5440).
+	AnsweredByTitle *string `json:"answeredByTitle,omitzero"`
 }
 
 type TranscriptEntryKindOptionChanged struct {

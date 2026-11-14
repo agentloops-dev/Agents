@@ -14298,7 +14298,7 @@ export type TranscriptEntryKind =
   | { compaction: { status: string; summary: ContentBlock[]; id?: string; error?: string } }
   | { notice: { _0: SessionNotice } }
   | { permissionAsked: { _0: PermissionRequest } }
-  | { permissionAnswered: { optionID: string; optionName?: string } }
+  | { permissionAnswered: { optionID: string; optionName?: string; answeredBy?: UUID; answeredByTitle?: string } }
   | { optionChanged: { id: string; value: JSONValue } }
   | { stateChanged: { _0: AgentState; reason?: EndedReason } }
   | { background: { _0: BackgroundItem } }

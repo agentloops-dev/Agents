@@ -84,6 +84,7 @@ func appToolCalls() []appTool {
 		{"list_sessions", (*Daemon).listSessions},
 		{"read_session", (*Daemon).readSession},
 		{"message_session", (*Daemon).messageSession},
+		{"answer_permission", (*Daemon).answerPermission},
 		{"cancel_message", (*Daemon).cancelMessage},
 		{"archive_session", (*Daemon).archiveSession},
 		{"stop_session", (*Daemon).stopSession},
