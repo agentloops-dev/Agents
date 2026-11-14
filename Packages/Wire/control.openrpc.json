@@ -1984,6 +1984,53 @@
       ]
     },
     {
+      "name": "deploys/deliveryAll",
+      "x-capability": "deploys.read/1",
+      "description": "deploys/delivery over the control plane's copy (#5496): the deploys of every machine in the scope that sends them, each once, so Delivery works for a group or org and while a machine sleeps.",
+      "tags": [
+        {
+          "name": "web"
+        }
+      ],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/reports.schema.json#/definitions/DeploysDeliveryRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/reports.schema.json#/definitions/DeploysDelivery"
+        }
+      }
+    },
+    {
+      "name": "deploys/sync",
+      "x-capability": "deploys.copy/1",
+      "description": "A host, on its channel 0 (#5496): every deploy it keeps, as deploys/delivery's figures need them, a few seconds after a change and when it connects, in place of the control plane's copy of its deploys. The copy keeps the machine store's bound.",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/reports.schema.json#/definitions/DeploysSync"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/core.schema.json#/definitions/Empty"
+        }
+      }
+    },
+    {
       "name": "folders/detect",
       "x-capability": "folders/1",
       "description": "To a host just added, from a control plane before #656.",

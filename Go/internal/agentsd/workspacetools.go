@@ -64,6 +64,8 @@ func (d *Daemon) ControlCapabilitiesKnown() {
 	d.sendBusSubscriptions(true)
 	d.sendLineage()
 	d.sendCITimings()
+	// The deploys go whole on each new link (#5496): a new control plane has no copy.
+	d.sendDeploys(true)
 }
 
 // askWorkspaces is one machine/machines call for an agent, named for the control plane's log.

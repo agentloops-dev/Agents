@@ -133,6 +133,8 @@ type Daemon struct {
 	// The build timings (#5177).
 	ciTimingsBook
 	ciSyncBook
+	// The control plane's copy of the deploys (#5496).
+	deploySyncBook
 	// The events this machine publishes on the bus (#4729).
 	busBook
 	// Subscriptions on the bus, and the bursts debounce holds (#4730).

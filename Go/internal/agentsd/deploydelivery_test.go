@@ -1,6 +1,9 @@
 package agentsd
 
 import (
+	"context"
+	"encoding/json"
+	"sync"
 	"testing"
 	"time"
 
@@ -59,5 +62,64 @@ func TestDeploysDelivery(t *testing.T) {
 	// Out of the range: no target.
 	if late := d.deploysDelivery(wire.DeploysDeliveryRequest{Range: wire.ReportRangeWeek}, now.Add(30*24*time.Hour)); len(late.Targets) != 0 {
 		t.Errorf("a month later: %+v, want no target", late.Targets)
+	}
+}
+
+// #5496: the machine sends every deploy it keeps to the control plane's copy (deploys/sync),
+// working out what each brings on its way, and sends again only when they changed, or on a
+// new link.
+func TestDeploysSyncSendsEveryDeploy(t *testing.T) {
+	d, c := start(t, t.TempDir())
+	defer d.Shutdown()
+	c.call(t, 1, "folders/add", map[string]any{"folder": "file://" + gitFolder(t, "git@github.com:alexec/agents.git")})
+	t0 := time.Now().UTC().Add(-2 * time.Hour).Truncate(time.Second)
+	forge := &fakeReleases{
+		compares: map[string][]compareCommit{
+			"aaa..bbb": {{SHA: "s1", Message: "Deploys: lineage nodes (#5241)", At: t0.Add(-2 * time.Hour)}},
+		},
+		asked: map[string]int{},
+	}
+	d.releaseCompare, d.releaseCommitPR = forge.compare, forge.commitPR
+	d.lineageEvent(deployEvent(t, "deploy.succeeded", 1, "production", "aaa", "v0.18.0", 10, wire.DeployStateSucceeded, t0.Add(-time.Hour), t0.Add(-time.Hour)))
+	d.lineageEvent(deployEvent(t, "deploy.succeeded", 2, "production", "bbb", "v0.19.0", 11, wire.DeployStateSucceeded, t0, t0))
+	d.lineageSettle(5 * time.Second)
+
+	var mu sync.Mutex
+	var sent []wire.DeploysSync
+	d.SetControlCapabilities(func() []string { return []string{wire.CapDeploysCopy1} })
+	d.SetControlAsk(askControl(func(_ context.Context, method string, params any) (json.RawMessage, error) {
+		if method == wire.CallDeploysSync.Name {
+			mu.Lock()
+			sent = append(sent, params.(wire.DeploysSync))
+			mu.Unlock()
+		}
+		return json.RawMessage(`{}`), nil
+	}))
+	count := func() int { mu.Lock(); defer mu.Unlock(); return len(sent) }
+	last := func() wire.DeploysSync { mu.Lock(); defer mu.Unlock(); return sent[len(sent)-1] }
+
+	d.sendDeploys(false)
+	first := last()
+	if len(first.Deploys) != 2 || first.Resolving == nil || !*first.Resolving {
+		t.Fatalf("first send: %+v, want both deploys, resolving", first)
+	}
+	f := first.Deploys[1]
+	if f.Ref != "github:deploy:alexec/agents#2" || f.Component != "alexec/agents" || f.State != wire.DeployStateSucceeded ||
+		len(f.Environments) != 1 || f.Environments[0].Tier != wire.EnvironmentTierProduction {
+		t.Fatalf("deploy 2: %+v", f)
+	}
+	d.deploySettle(5 * time.Second)
+	d.sendDeploys(false)
+	if got := last(); got.Resolving != nil || len(got.Deploys[1].Merges) != 1 {
+		t.Fatalf("after the compare: %+v, want #5241's merge", got)
+	}
+	n := count()
+	d.sendDeploys(false)
+	if count() != n {
+		t.Fatal("sent again with nothing changed")
+	}
+	d.sendDeploys(true)
+	if count() != n+1 {
+		t.Fatal("a new link did not send again")
 	}
 }

@@ -4008,6 +4008,34 @@ type DeployComponent struct {
 	Repo *string `json:"repo,omitzero"`
 }
 
+// One environment a deploy is part-of, in a DeployDeliveryFact (#5496): its name, its lineage ref and its tier.
+type DeployDeliveryEnvironment struct {
+	Name string `json:"name"`
+
+	Ref string `json:"ref"`
+
+	Tier EnvironmentTier `json:"tier"`
+}
+
+// One deploy a machine keeps (lineage-deploys.json, #5241), as deploys/delivery's figures need it (#5496): its lineage ref, its component (owner/name), its state, when it ended (its finish, else its start), whether a succeeded one is a rollback, the merge times of the PRs it brings (when the forge said them), the times health signals were seen in it, and its environments. Only refs, names, states and times (principle 7).
+type DeployDeliveryFact struct {
+	Ref string `json:"ref"`
+
+	Component string `json:"component"`
+
+	State DeployState `json:"state"`
+
+	At Date `json:"at"`
+
+	Rollback *bool `json:"rollback,omitzero"`
+
+	Merges []Date `json:"merges,omitzero"`
+
+	Health []Date `json:"health,omitzero"`
+
+	Environments []DeployDeliveryEnvironment `json:"environments"`
+}
+
 // One target's DORA figures in deploys/delivery (#5245, spec 5239-deploy-model): a component (the repo, by default) in one environment, from the deploys this machine keeps. ended is the deploys that succeeded or failed in the range (a cancelled one is neither), failed those that failed, rollbacks the succeeded ones that put an older release back. deploymentFrequency is the succeeded deploys a week; leadTime is a PR's merge to the first succeeded deploy that brings it, the median and p90; changeFailureRate is the failed deploys and rollbacks over the ended ones, 0 to 1; recoveryTime is a failed deploy's end, or a health signal seen in a deploy, to the next succeeded deploy, the median. Each has a series of its weeks and DORA 2024's band, as Planning's Delivery row has them.
 type DeployDeliveryTarget struct {
 	// The component's id: owner/name for a repo.
@@ -4136,7 +4164,7 @@ type DeployVersion struct {
 	Ref *string `json:"ref,omitzero"`
 }
 
-// deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most.
+// deploys/delivery's answer (#5245): the targets with a deploy that ended in [since, at], production first, then by tier and the most deploys. resolving is true while what some deploys bring is still being asked of the forge, so lead time may grow on the next read. deploys is how many deploys this machine keeps, of every target and age, so a page can pick the machine that knows most. From deploys/deliveryAll (#5496), deploys is how many deploys the copies of the machines in the scope keep, each once.
 type DeploysDelivery struct {
 	Since Date `json:"since"`
 
@@ -4151,11 +4179,20 @@ type DeploysDelivery struct {
 	Resolving *bool `json:"resolving,omitzero"`
 }
 
-// deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said.
+// deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the range (day is the last 7 days, as week), of one tier or of every tier when none is said. scope is for deploys/deliveryAll (#5496): whose machines' copies the control plane reads, as reports/value's; a machine leaves it out.
 type DeploysDeliveryRequest struct {
 	Range ReportRange `json:"range"`
 
 	Tier *EnvironmentTier `json:"tier,omitzero"`
+
+	Scope *ReportScope `json:"scope,omitzero"`
+}
+
+// deploys/sync (#5496): every deploy a machine keeps, at most 1,000, in place of the control plane's copy of that machine's deploys. resolving is true while what some deploys bring is still being asked of the forge.
+type DeploysSync struct {
+	Deploys []DeployDeliveryFact `json:"deploys"`
+
+	Resolving *bool `json:"resolving,omitzero"`
 }
 
 // The live tile's latest look at the Mac's screen while an agent holds the screen lease (#3004, US4, FR-011): a downscaled JPEG of the whole screen, base64, or, while the screen is locked, locked and no image (FR-012). Sent only to the clients showing that agent, never recorded, never replayed (FR-016).

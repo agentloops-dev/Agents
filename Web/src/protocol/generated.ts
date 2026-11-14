@@ -3723,6 +3723,34 @@ export interface DeployComponent {
 }
 
 /**
+ * One environment a deploy is part-of, in a DeployDeliveryFact (#5496): its name, its lineage ref
+ * and its tier.
+ */
+export interface DeployDeliveryEnvironment {
+  name: string;
+  ref: string;
+  tier: EnvironmentTier;
+}
+
+/**
+ * One deploy a machine keeps (lineage-deploys.json, #5241), as deploys/delivery's figures need it
+ * (#5496): its lineage ref, its component (owner/name), its state, when it ended (its finish, else
+ * its start), whether a succeeded one is a rollback, the merge times of the PRs it brings (when the
+ * forge said them), the times health signals were seen in it, and its environments. Only refs,
+ * names, states and times (principle 7).
+ */
+export interface DeployDeliveryFact {
+  ref: string;
+  component: string;
+  state: DeployState;
+  at: WireDate;
+  rollback?: boolean;
+  merges?: WireDate[];
+  health?: WireDate[];
+  environments: DeployDeliveryEnvironment[];
+}
+
+/**
  * One target's DORA figures in deploys/delivery (#5245, spec 5239-deploy-model): a component (the
  * repo, by default) in one environment, from the deploys this machine keeps. ended is the deploys
  * that succeeded or failed in the range (a cancelled one is neither), failed those that failed,
@@ -3866,7 +3894,8 @@ export interface DeployVersion {
  * production first, then by tier and the most deploys. resolving is true while what some deploys
  * bring is still being asked of the forge, so lead time may grow on the next read. deploys is how
  * many deploys this machine keeps, of every target and age, so a page can pick the machine that
- * knows most.
+ * knows most. From deploys/deliveryAll (#5496), deploys is how many deploys the copies of the
+ * machines in the scope keep, each once.
  */
 export interface DeploysDelivery {
   since: WireDate;
@@ -3879,11 +3908,24 @@ export interface DeploysDelivery {
 
 /**
  * deploys/delivery (#5245): the DORA figures of each target this machine keeps deploys of, over the
- * range (day is the last 7 days, as week), of one tier or of every tier when none is said.
+ * range (day is the last 7 days, as week), of one tier or of every tier when none is said. scope is
+ * for deploys/deliveryAll (#5496): whose machines' copies the control plane reads, as
+ * reports/value's; a machine leaves it out.
  */
 export interface DeploysDeliveryRequest {
   range: ReportRange;
   tier?: EnvironmentTier;
+  scope?: ReportScope;
+}
+
+/**
+ * deploys/sync (#5496): every deploy a machine keeps, at most 1,000, in place of the control
+ * plane's copy of that machine's deploys. resolving is true while what some deploys bring is still
+ * being asked of the forge.
+ */
+export interface DeploysSync {
+  deploys: DeployDeliveryFact[];
+  resolving?: boolean;
 }
 
 /**
@@ -15894,6 +15936,7 @@ export interface Methods {
   "dailySummary/setSettings": { params: DailySummarySettings; result: DailySummarySettings };
   "dailySummary/settings": { params: Empty; result: DailySummarySettings };
   "deploys/delivery": { params: DeploysDeliveryRequest; result: DeploysDelivery };
+  "deploys/deliveryAll": { params: DeploysDeliveryRequest; result: DeploysDelivery };
   "deploys/targets": { params: DeployTargetsRequest; result: DeployTargets };
   "desktopControl/resume": { params: AgentRequest; result: Empty };
   "desktopControl/set": { params: DesktopControlSettings; result: DesktopControlSettings };
@@ -16346,6 +16389,7 @@ export const MethodTarget = {
   "dailySummary/setSettings": "host",
   "dailySummary/settings": "host",
   "deploys/delivery": "host",
+  "deploys/deliveryAll": "control",
   "deploys/targets": "host",
   "desktopControl/resume": "host",
   "desktopControl/set": "host",
@@ -17019,6 +17063,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   DeployCheck: { required: ["kind", "system", "when", "state", "rawState"], optional: ["id", "name", "url"] },
   DeployCheckEvent: { required: ["check", "target", "component", "environment", "tier"], optional: ["deploy"] },
   DeployComponent: { required: ["system", "id"], optional: ["kind", "name", "repo"] },
+  DeployDeliveryEnvironment: { required: ["name", "ref", "tier"], optional: [] },
+  DeployDeliveryFact: { required: ["ref", "component", "state", "at", "environments"], optional: ["rollback", "merges", "health"] },
   DeployDeliveryTarget: { required: ["component", "environment", "environmentRef", "tier", "ended", "failed", "rollbacks", "deploymentFrequency", "leadTime", "changeFailureRate", "recoveryTime"], optional: [] },
   DeployEnvironment: { required: ["system", "name", "tier"], optional: ["ephemeral", "url"] },
   DeployEvent: { required: ["deploy", "component", "environment", "tier"], optional: ["outcome"] },
@@ -17029,7 +17075,8 @@ export const Shapes: Record<string, { required: readonly string[]; optional: rea
   DeployTargetsRequest: { required: [], optional: [] },
   DeployVersion: { required: ["artifacts"], optional: ["name", "system", "id", "ref"] },
   DeploysDelivery: { required: ["since", "at", "windowDays", "deploys", "targets"], optional: ["resolving"] },
-  DeploysDeliveryRequest: { required: ["range"], optional: ["tier"] },
+  DeploysDeliveryRequest: { required: ["range"], optional: ["tier", "scope"] },
+  DeploysSync: { required: ["deploys"], optional: ["resolving"] },
   DesktopControlLiveFrame: { required: ["agentID", "capturedAt"], optional: ["image", "locked", "narration"] },
   DesktopControlPause: { required: ["app", "pausedAt"], optional: [] },
   DesktopControlSettings: { required: ["enabled"], optional: ["mode"] },

@@ -125,6 +125,7 @@ var own = methodSet(
 	"lineage/walkAll",
 	"builds/historyAll",
 	"builds/runAll",
+	"deploys/deliveryAll",
 	"links/approve",
 	"links/deny",
 	"links/list",
@@ -422,6 +423,8 @@ func (m *Methods) Handle(method string, params json.RawMessage, from Caller) (an
 		return m.lineageReadMethod(ctx, method, params, from)
 	case wire.CallBuildsHistoryAll.Name, wire.CallBuildsRunAll.Name:
 		return m.buildsReadMethod(ctx, method, params, from)
+	case wire.CallDeploysDeliveryAll.Name:
+		return m.deploysReadMethod(ctx, params, from)
 	case "links/list", "links/requests", "links/approve", "links/deny", "links/remove":
 		return m.linksMethod(ctx, method, params, from)
 	case "lock/get", "lock/add", "lock/reset":
@@ -1320,6 +1323,12 @@ func (m *Methods) HostSaid(host, method string, params json.RawMessage) (any, er
 			return nil, err
 		}
 		return m.s.keepBuildsSync(ctx, host, sync, time.Now())
+	case wire.CallDeploysSync.Name:
+		sync, err := require[wire.DeploysSync](params, "DeploysSync")
+		if err != nil {
+			return nil, err
+		}
+		return m.s.keepDeploysSync(ctx, host, sync, time.Now())
 	case "lineage/sync":
 		sync, err := require[wire.LineageSync](params, "LineageSync")
 		if err != nil {

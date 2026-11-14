@@ -56,7 +56,9 @@ public enum Capability {
     public static let credentials1 = "credentials/1"
     public static let daemon1 = "daemon/1"
     public static let dailySummary1 = "daily-summary/1"
+    public static let deploysCopy1 = "deploys.copy/1"
     public static let deploysDelivery1 = "deploys.delivery/1"
+    public static let deploysRead1 = "deploys.read/1"
     public static let deploysTargets1 = "deploys.targets/1"
     public static let device1 = "device/1"
     public static let devices1 = "devices/1"
@@ -755,6 +757,8 @@ public enum Capability {
         "control/setFolderDetection": "control/1",
         "control/setWeb": "control.local/1",
         "control/status": "control/1",
+        "deploys/deliveryAll": "deploys.read/1",
+        "deploys/sync": "deploys.copy/1",
         "folders/detected": "folders/1",
         "git/credential": "git/1",
         "governance/approvals": "governance/1",
