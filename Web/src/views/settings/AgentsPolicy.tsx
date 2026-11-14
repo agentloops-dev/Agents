@@ -249,7 +249,7 @@ function Control({ id, row, rule, folder, yours, editable, set }: { id: string; 
   switch (row.kind.kind) {
     case "count":
       // A number of things (helpers, workflows, notices) is a whole number to type or step, with no top but the cap's
-      // (#5343); the cool-down, whose values are presets, stays a menu.
+      // (#5561); the cool-down, whose values are presets, stays a menu.
       if (!row.kind.higherIsTighter) {
         const cap = typeof rule?.cap === "number" ? rule.cap : undefined;
         return (

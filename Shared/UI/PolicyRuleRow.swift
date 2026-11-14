@@ -54,7 +54,7 @@ struct PolicyRuleRow: View {
         case .choice(let order):
             menu(order.map { JSONValue.string($0) }) { PolicyLayersWords.choice(row.rule, $0.stringValue ?? "") }
         case .count(_, higherIsTighter: false):
-            // A number of things has no top but the cap's (#5343): a stepper, not a list of values.
+            // A number of things has no top but the cap's (#5561): a stepper, not a list of values.
             countStepper
         case .count(let numbers, _):
             menu(countChoices(numbers)) { PolicyLayersWords.count(row.rule, $0.intValue ?? 0) }
