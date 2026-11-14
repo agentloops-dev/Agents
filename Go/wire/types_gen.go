@@ -16355,6 +16355,11 @@ const WeekdayThu Weekday = "thu"
 const WeekdayFri Weekday = "fri"
 const WeekdaySat Weekday = "sat"
 
+// work/dismiss-lead (#5458): hide an epic from the suggestions until the epic changes or a lead of it ends. The list is the person's, kept on this machine.
+type WorkDismissLeadRequest struct {
+	Node LineageNode `json:"node"`
+}
+
 // A feature in work/features (#4586): feature is it as forge/features says it. epics are its open epics, the newest first, each with where it is in its plan and its children. loose are its open issues that are not epics and have no parent (of the newest 500 open issues), the newest update first, as children are: when each started, and whether it waits for a person.
 type WorkFeature struct {
 	Feature ForgeFeature `json:"feature"`
@@ -16396,6 +16401,33 @@ type WorkFeaturesRequest struct {
 	Board *string `json:"board,omitzero"`
 }
 
+// An open epic with no lead, as work/suggest-leads says it (#5458, epic #5457). node, title and url are the epic's; folder is a folder on this machine on its repo; milestone is its name and due its due date (YYYY-MM-DD) where the forge says them. done and total are its children closed and all (0 and 0 for a standing epic, whose plan is a query). high says an open child has the label priority:high, and ui that an open child is a story (a person can see or use it: a client changes); the order says why. start is the new-agent form Start lead fills: the prompt, the labels #<n> and lead, and no worktree. It starts nothing.
+type WorkLeadSuggestion struct {
+	Node LineageNode `json:"node"`
+
+	Title string `json:"title"`
+
+	URL *string `json:"url,omitzero"`
+
+	Folder *string `json:"folder,omitzero"`
+
+	Milestone *string `json:"milestone,omitzero"`
+
+	Due *string `json:"due,omitzero"`
+
+	Done int64 `json:"done"`
+
+	Total int64 `json:"total"`
+
+	High *bool `json:"high,omitzero"`
+
+	Ui *bool `json:"ui,omitzero"`
+
+	Standing *bool `json:"standing,omitzero"`
+
+	Start ForgeStart `json:"start"`
+}
+
 // How a turn ended (#1916): only a question needs the person. A value this build does not know, such as an old record's `blocked`, `stuck` or `partly_done`, reads as `done`.
 type WorkOutcome string
 
@@ -16430,6 +16462,20 @@ type WorkReport struct {
 	At Date `json:"at"`
 
 	Block *Block `json:"block,omitzero"`
+}
+
+// work/suggest-leads (#5458): New Session's Suggested section, from the forge's open epics and this machine's sessions. suggestions are at most 3 epics with no lead (no session that is not archived has both #<epic> and lead), ranked: an epic with priority:high children first, then one with UI children, then the earliest milestone due date, then the one nearest to done. more is how many more there are, for N more in Work. An epic the person dismissed is left out until it changes or a lead has ended. errors say a forge that could not be read.
+type WorkSuggestLeads struct {
+	Suggestions []WorkLeadSuggestion `json:"suggestions"`
+
+	More int64 `json:"more"`
+
+	Errors []ForgeListError `json:"errors,omitzero"`
+}
+
+// work/suggest-leads (#5458): the epics of every folder on this machine, or of one folder's repo.
+type WorkSuggestLeadsRequest struct {
+	Folder *string `json:"folder,omitzero"`
 }
 
 // work/timeline (#4172, specs/time-stream/wireframe.md sections 4, 7 to 9): the epics of a project whose work overlaps from to to, each with its children, its segments and, while open, its forecast (M10); and the releases published in the window. timeZone is the working clock's: this host's, an IANA name, absent when it has none. backtest is how the forecast did on the epics whose work ended in the last 30 days, run again at most once a day; absent when there are too few. errors are the forges that could not be read, as forge/issues says them.

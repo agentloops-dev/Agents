@@ -1152,6 +1152,27 @@
       }
     },
     {
+      "name": "work/dismiss-lead",
+      "x-capability": "work.suggest-leads/1",
+      "tags": [],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/reports.schema.json#/definitions/WorkDismissLeadRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/forge.schema.json#/definitions/ForgeDone"
+        }
+      }
+    },
+    {
       "name": "work/features",
       "x-capability": "work.features/1",
       "tags": [
@@ -1173,6 +1194,27 @@
         "name": "result",
         "schema": {
           "$ref": "schema/reports.schema.json#/definitions/WorkFeatures"
+        }
+      }
+    },
+    {
+      "name": "work/suggest-leads",
+      "x-capability": "work.suggest-leads/1",
+      "tags": [],
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "params",
+          "required": true,
+          "schema": {
+            "$ref": "schema/reports.schema.json#/definitions/WorkSuggestLeadsRequest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "schema/reports.schema.json#/definitions/WorkSuggestLeads"
         }
       }
     },
