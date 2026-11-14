@@ -16186,9 +16186,7 @@ export interface Methods {
   "views/show": { params: ViewShowRequest; result: Empty };
   "wake/set": { params: WakeSettings; result: WakeSettings };
   "wake/settings": { params: Empty; result: WakeSettings };
-  "work/dismiss-lead": { params: WorkDismissLeadRequest; result: ForgeDone };
   "work/features": { params: WorkFeaturesRequest; result: WorkFeatures };
-  "work/suggest-leads": { params: WorkSuggestLeadsRequest; result: WorkSuggestLeads };
   "work/timeline": { params: WorkTimelineRequest; result: WorkTimeline };
   "workflows/approve": { params: WorkflowApproveRequest; result: WorkflowSummary };
   "workflows/archive": { params: WorkflowArchiveRequest; result: WorkflowSummary };
@@ -16640,9 +16638,7 @@ export const MethodTarget = {
   "views/show": "host",
   "wake/set": "host",
   "wake/settings": "host",
-  "work/dismiss-lead": "host",
   "work/features": "host",
-  "work/suggest-leads": "host",
   "work/timeline": "host",
   "workflows/approve": "host",
   "workflows/archive": "host",
