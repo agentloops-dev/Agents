@@ -29,12 +29,13 @@ LEGAL = {"privacy.md", "terms.md"}
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
 IMAGE_LIMIT = 400 * 1024
 
+REPO_LINK = re.compile(r"github\.com/(alexec|agentloops-dev)/(Agents|agent-loops)(?![\w-])", re.I)
 PRIVATE = [
     (re.compile(r"/Users/"), "a home-directory path (/Users/…)"),
     (re.compile(r"/private/"), "a /private/ path"),
     (re.compile(r"/tmp/run-"), "a scratch-root path (/tmp/run-…)"),
     (re.compile(r"alexcollins", re.I), "a real user name"),
-    (re.compile(r"github\.com/(alexec|agentloops-dev)/(Agents|agent-loops)(?![\w-])", re.I), "a link into the private repository (#1064)"),
+    (REPO_LINK, "a link into the private repository (#1064)"),
     (re.compile(r"\bghp_[A-Za-z0-9]"), "a GitHub token"),
     (re.compile(r"\bgithub_pat_"), "a GitHub token"),
     (re.compile(r"\bsk-ant-"), "an Anthropic key"),
@@ -250,6 +251,19 @@ def main():
     for page in pages:
         if page not in seen:
             problems.add(page, 1, "nav-missing: not in the nav of mkdocs.yml")
+
+    # The public site (www/) must not link into the private repository either (#2147).
+    www = os.path.join(root, "www")
+    for directory, subdirectories, files in os.walk(www):
+        subdirectories.sort()
+        for name in sorted(files):
+            if os.path.splitext(name)[1].lower() not in {".html", ".css", ".js", ".txt", ".xml", ".json"} and name != "_headers":
+                continue
+            path = os.path.join(directory, name)
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for number, line in enumerate(f, 1):
+                    if REPO_LINK.search(line):
+                        problems.add(path, number, "private: a link into the private repository (#1064)")
 
     used_images = set()
     for page in pages:
