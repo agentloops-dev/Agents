@@ -2146,6 +2146,14 @@
                 },
                 "optionName": {
                   "type": "string"
+                },
+                "answeredBy": {
+                  "$ref": "core.schema.json#/definitions/UUID",
+                  "description": "The session that answered it: the one that started this agent, with answer_permission (#5440). Absent when the person answered."
+                },
+                "answeredByTitle": {
+                  "type": "string",
+                  "description": "That session's title when it answered, for \"<title> chose …\" (#5440)."
                 }
               },
               "required": [

@@ -652,6 +652,40 @@
     "title": "Tell another session something"
   },
   {
+    "description": "Answer a permission card of a session you started with start_session (#5440), on the same card the person sees: they can answer it first, and when you answer, it closes on every client and the session's chat says you chose. You can allow only once, and only what your own permission mode would let you do without asking (a read, an edit, a command, by the mode's rank), never more than the policy allows; you can always deny. A step that is hard to undo is not yours to answer and stays with the person: a delete, a file outside that session's folder, a force push or a branch or tag deleted, a hard reset or clean, an rm, a publish (npm, cargo, docker push, a release, a new repository, gh api or curl that writes), or a payment. agent.asked_permission wakes you with the request's id in request and the tool in tool. The answer is in the record, by your name.",
+    "inputSchema": {
+      "properties": {
+        "answer": {
+          "description": "allow (once) or deny.",
+          "enum": [
+            "allow",
+            "deny"
+          ],
+          "type": "string"
+        },
+        "description": {
+          "description": "Why you are making this call, in one short sentence for the person.",
+          "type": "string"
+        },
+        "id": {
+          "description": "The session's id, as start_session or list_sessions gave it.",
+          "type": "string"
+        },
+        "request": {
+          "description": "The permission request's id, as agent.asked_permission gave it in request. Needed only when that session waits on more than one.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "answer"
+      ],
+      "type": "object"
+    },
+    "name": "answer_permission",
+    "title": "Answer a permission card of a session you started"
+  },
+  {
     "description": "Take a turn with something on this Mac that only one agent should use at a time: a simulator, a browser, the screen (mouse, keyboard, front window), or anything you name, such as a port. Lease it before you use it, and release it as soon as you are done. If you already hold it, this extends your lease. If someone else holds it, you join its line and are told your place at once; you will get a lease.granted event when it is yours. End your turn, and you will be started again with it. Stop Waiting or cancel_wait leaves the line. Take several resources in the same order every time. Use list_resources to see the names. The person may have declared resources, such as \"build\", each with a description of when to take it and how many agents may hold it at once: lease a declared resource whenever its description applies to what you are about to do.",
     "inputSchema": {
       "properties": {
