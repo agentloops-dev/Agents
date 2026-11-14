@@ -306,6 +306,7 @@ func toolsBrief(browser, screen, bot, github bool) string {
 		"- set_session_labels: label this session #<n> for an issue or P#<n> for a pull request. This links them to it.",
 		"- docs_search, then docs_read: find the docs for your work, in this folder and its docs connectors.",
 		"- estimate_issue: say what an issue or an epic will cost and take.",
+		"- conflict_risk_analysis: before your first push and before auto-merge, ask which open pull requests your change would conflict with; it says go, wait for #N or stack on #N. Advice, not a gate.",
 		"- manage_accounts: my outside accounts (gitlab.com, AWS…): find one before you make one, and add the one you make.",
 		"- manage_connectors: this folder's connectors (.agents/mcp.json). approve asks me to approve one that waits, as manage_workflows enable asks me to turn on a workflow that is mine to turn on: wait for my answer, never click Approve for me.",
 		"- agents-secret NAME, a command on your PATH: the value of one of my secrets that does not ask before use, for your own command, " +

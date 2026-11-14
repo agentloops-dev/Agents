@@ -100,6 +100,7 @@ var appToolMethods = map[string]string{
 	"docs_search":            "docs/search",
 	"docs_read":              "docs/read",
 	"estimate_issue":         "issues/estimate",
+	"conflict_risk_analysis": "risks/conflictAnalysis",
 	"set_ci_secret":          "secrets/setCI",
 	"set_ci_variable":        "variables/setCI",
 	"set_environment_gate":   "environments/setGate",

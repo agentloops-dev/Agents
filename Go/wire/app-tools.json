@@ -1233,6 +1233,35 @@
     }
   },
   {
+    "name": "conflict_risk_analysis",
+    "title": "Check a change against the open pull requests",
+    "annotations": {
+      "readOnlyHint": true
+    },
+    "description": "Before your first push, and before you turn on auto-merge, ask which open pull requests this change would conflict with. It merges your diff against every open request of this folder's repo with git merge-tree (no files are touched), leaves out each request's own conflicts with the default branch and files a command regenerates, and gives one advice per request and overall: go, wait for #N (it lands soon: rebase once on a clean base), or stack on #N (your change builds on it: base your branch on its branch, no auto-merge until it lands). The advice is advisory, never a gate. It works with any forge the folder's repo is on, and ends with the report as JSON.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "description": "Why you are making this call, in one short sentence for the person.",
+          "type": "string"
+        },
+        "diff": {
+          "type": "string",
+          "description": "What to check: a pushed branch, a tag or a commit. Leave it out, or say working-tree, for this folder's working tree with its uncommitted and new files."
+        },
+        "depends_on": {
+          "type": "string",
+          "description": "Optional: the request numbers this change builds on, such as \"5420, 5431\"."
+        },
+        "ignore": {
+          "type": "string",
+          "description": "Optional: more files that a command regenerates, as comma separated globs. A folder can list them in .agents/folder.json under regeneratedFiles."
+        }
+      }
+    }
+  },
+  {
     "name": "set_ci_secret",
     "title": "Set a CI secret",
     "annotations": {

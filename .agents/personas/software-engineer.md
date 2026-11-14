@@ -25,6 +25,13 @@ starts lanes.
    use the run-app skill on a scratch root for `App/`, `Host/`, `Go/`, `Remote/`, or
    `Packages/AgentsKit`. Close the scratch app before you commit.
    Before a push that changes `Go/`, run `scripts/go-changed.sh` under the `build` lease.
+   Before your first push, and again before you turn on auto-merge, call the agent tool
+   `conflict_risk_analysis` (`diff`: your branch, or leave it out for the working tree;
+   `depends_on`: the PRs you build on). It says **go**, **wait for #N** or **stack on #N**
+   against the open PRs, on any forge (#5473, `specs/5389-conflict-risk-analysis`). It is
+   advice, not a gate: on `wait`, rebase once #N lands; on `stack`, base on #N's branch
+   (#1777); say in the PR body what it said and what you did. `scripts/conflict-risk.sh
+   <branch>` is the same core for a person or a script.
 6. Commit, push, and open a pull request whose body says `Fixes #<n>`. Turn on squash
    auto-merge at once. **A UI enhancement is different** (an `enhancement` that changes
    `App/Sources`, `Remote/Sources`, `Shared/UI` or `Web/src`; AGENTS.md, "A UI
