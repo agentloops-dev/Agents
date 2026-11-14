@@ -33,6 +33,8 @@ struct RemoteSidebar: View {
     @AppStorage("showsWork") private var showsWork = true
     /// Machines (#4034), open until folded, and kept so, as the window keeps it.
     @AppStorage("showsMachines") private var showsMachines = true
+    /// Reports (#5454), open until folded, and kept so, as the window keeps it.
+    @AppStorage("showsReports") private var showsReports = true
     /// The smart groups turned off in Settings ▸ Sidebar (#846).
     @AppStorage(SidebarSmartRow.offDefaultsKey) private var smartOff = SidebarSmartRow.offAtFirst
     /// Settings (#846), opened from the sidebar's foot.
@@ -155,16 +157,8 @@ struct RemoteSidebar: View {
             }
 
             if !model.folders.isEmpty {
-                // The daily summary's page (#3721), while the daily summary is on. New Session is
-                // in the + (#5447), and a folder's long press.
-                if model.dailySummarySettings?.mode.writesPages == true {
-                    Section {
-                        SummaryRowLabel(newest: model.summaryPages.first)
-                            .accessibilityHint("Opens your daily summary")
-                            .activityIcon(SummaryRowLabel.systemImage).appText(.supporting).paperTag(SidebarItem.summary)
-                    }
-                }
-
+                // Work, Status, Machines, then Reports, as the window has them (#5454). New Session
+                // is in the + (#5447), and a folder's long press.
                 // Work (#3119, #3256): a row per list, as the window has them (#4004), above
                 // Status, Features too (#3269). No Timeline: it is the Mac's.
                 Section(isExpanded: $showsWork) {
@@ -182,19 +176,12 @@ struct RemoteSidebar: View {
                 // Pages about all the work rather than one folder, above the smart
                 // groups, as the window has them (#495). Plain titles beside their icons
                 // in the accent (#155). It folds, as a folder does.
+                // Runtimes, Events, Secrets and Accounts, in the window's order (#5454).
                 Section(isExpanded: $showsStatus) {
-                    // The Multiplier page (#4116), first, as the window has it first under Usage.
-                    MultiplierRow().accessibilityHint(MultiplierRow.help)
-                        .activityIcon("multiply.circle").appText(.supporting).paperTag(SidebarItem.multiplier)
-                    // Velocity (#4758): the Multiplier's PRs over time, the one Usage page the
-                    // Remote has (tier Core), after the Multiplier as the window has it in Usage.
-                    HStack { Text("Velocity"); Spacer() }
-                        .accessibilityHint("The pull requests that landed, over time")
-                        .activityIcon("arrow.triangle.merge").appText(.supporting).paperTag(SidebarItem.velocity)
-                    EventsRow().activityIcon("list.bullet.rectangle").appText(.supporting).paperTag(SidebarItem.events)
                     RuntimesRow().activityIcon("cpu", warns: runtimesTally.map { $0.noneWorking || $0.isLow } ?? false,
                                                tint: runtimesTally?.isLow == true ? .warning : .failure)
                         .appText(.supporting).paperTag(SidebarItem.runtimes)
+                    EventsRow().activityIcon("list.bullet.rectangle").appText(.supporting).paperTag(SidebarItem.events)
                     // What happened last to the person's secrets and accounts (#4161), as the window's.
                     ForEach([StatusSecretsKind.secrets, .accounts], id: \.self) { kind in
                         StatusSecretsRow(kind: kind, state: model.userScope) { model.work.agent($0)?.title }
@@ -223,6 +210,26 @@ struct RemoteSidebar: View {
                     } header: {
                         Text("Machines")
                     }
+                }
+
+                // Reports (#5454), after Machines, as the window has them: the pages that report
+                // on the work. Cost, Tokens and Time are the Mac's and the web's (their tier).
+                Section(isExpanded: $showsReports) {
+                    // The Multiplier page (#4116), first, as the window has it.
+                    MultiplierRow().accessibilityHint(MultiplierRow.help)
+                        .activityIcon("multiply.circle").appText(.supporting).paperTag(SidebarItem.multiplier)
+                    // Velocity (#4758): the Multiplier's PRs over time (tier Core).
+                    HStack { Text("Velocity"); Spacer() }
+                        .accessibilityHint("The pull requests that landed, over time")
+                        .activityIcon("arrow.triangle.merge").appText(.supporting).paperTag(SidebarItem.velocity)
+                    // The daily summary's page (#3721), a report too, while the daily summary is on.
+                    if model.dailySummarySettings?.mode.writesPages == true {
+                        SummaryRowLabel(newest: model.summaryPages.first)
+                            .accessibilityHint("Opens your daily summary")
+                            .activityIcon(SummaryRowLabel.systemImage).appText(.supporting).paperTag(SidebarItem.summary)
+                    }
+                } header: {
+                    Text("Reports")
                 }
 
                 // Pinned, Needs You, Working, Unread: a group each across every folder
