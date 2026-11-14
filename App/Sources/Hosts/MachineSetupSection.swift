@@ -42,7 +42,7 @@ struct MachineSetupSection: View {
 
     private func stepRow(_ step: DaemonAPI.MachineSetupStep, now: Date) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: Self.symbol(step.state))
+            Image(icon: Self.symbol(step.state))
                 .foregroundStyle(Self.tint(step.state).style(or: .secondary))
                 .frame(width: 18)
                 .accessibilityLabel(Self.stateWords(step.state))
