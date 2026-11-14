@@ -89,6 +89,12 @@ Mac window and the iPhone and iPad app hold the same value.
 | forge.fill.done | `--forge-fill-done` | `Paper.forgeFillDone` | `#8250df` | `#8957e5` | A merged or closed badge. |
 | forge.fill.closed | `--forge-fill-closed` | `Paper.forgeFillClosed` | `#cf222e` | `#da3633` | A closed pull request's badge. |
 | forge.fill.draft | `--forge-fill-draft` | `Paper.forgeFillDraft` | `#59636e` | `#6e7681` | A draft's or a not planned issue's badge. |
+| diff.added.wash | `--paper-diff-added-wash` | `Paper.diffAddedWash` | `#e6ffec` | `#1d2e1f` | Under an added line. |
+| diff.added.bar | `--paper-diff-added-bar` | `Paper.diffAddedBar` | `#4ac26b` | `#2ea043` | The bar at an added line's edge. |
+| diff.added.word | `--paper-diff-added-word` | `Paper.diffAddedWord` | `#abf2bc` | `#22502a` | Under the words that an added line changed. |
+| diff.removed.wash | `--paper-diff-removed-wash` | `Paper.diffRemovedWash` | `#ffebe9` | `#3b2220` | Under a removed line. |
+| diff.removed.bar | `--paper-diff-removed-bar` | `Paper.diffRemovedBar` | `#ff8182` | `#f85149` | The bar at a removed line's edge. |
+| diff.removed.word | `--paper-diff-removed-word` | `Paper.diffRemovedWord` | `#ffcecb` | `#73302c` | Under the words that a removed line changed. |
 | code.comment | `--code-comment` | `InkValues.comment` | `#64707a` | `#a3adb8` | A comment, in italic. |
 | code.keyword | `--code-keyword` | `InkValues.keyword` | `#2b4c8c` | `#8fb0e8` | A keyword, true, false, null. |
 | code.string | `--code-string` | `InkValues.string` | `#4e6420` | `#a9c27a` | A string. |

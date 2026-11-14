@@ -77,6 +77,18 @@
   --forge-fill-closed: light-dark(#cf222e, #da3633);
   /* A draft's or a not planned issue's badge. */
   --forge-fill-draft: light-dark(#59636e, #6e7681);
+  /* Under an added line. */
+  --paper-diff-added-wash: light-dark(#e6ffec, #1d2e1f);
+  /* The bar at an added line's edge. */
+  --paper-diff-added-bar: light-dark(#4ac26b, #2ea043);
+  /* Under the words that an added line changed. */
+  --paper-diff-added-word: light-dark(#abf2bc, #22502a);
+  /* Under a removed line. */
+  --paper-diff-removed-wash: light-dark(#ffebe9, #3b2220);
+  /* The bar at a removed line's edge. */
+  --paper-diff-removed-bar: light-dark(#ff8182, #f85149);
+  /* Under the words that a removed line changed. */
+  --paper-diff-removed-word: light-dark(#ffcecb, #73302c);
   /* A comment, in italic. */
   --code-comment: light-dark(#64707a, #a3adb8);
   /* A keyword, true, false, null. */

@@ -77,6 +77,18 @@
   --forge-fill-closed: #cf222e;
   /* A draft's or a not planned issue's badge. */
   --forge-fill-draft: #59636e;
+  /* Under an added line. */
+  --paper-diff-added-wash: #e6ffec;
+  /* The bar at an added line's edge. */
+  --paper-diff-added-bar: #4ac26b;
+  /* Under the words that an added line changed. */
+  --paper-diff-added-word: #abf2bc;
+  /* Under a removed line. */
+  --paper-diff-removed-wash: #ffebe9;
+  /* The bar at a removed line's edge. */
+  --paper-diff-removed-bar: #ff8182;
+  /* Under the words that a removed line changed. */
+  --paper-diff-removed-word: #ffcecb;
   /* A comment, in italic. */
   --code-comment: #64707a;
   /* A keyword, true, false, null. */
@@ -186,6 +198,12 @@
     --forge-fill-done: #8957e5;
     --forge-fill-closed: #da3633;
     --forge-fill-draft: #6e7681;
+    --paper-diff-added-wash: #1d2e1f;
+    --paper-diff-added-bar: #2ea043;
+    --paper-diff-added-word: #22502a;
+    --paper-diff-removed-wash: #3b2220;
+    --paper-diff-removed-bar: #f85149;
+    --paper-diff-removed-word: #73302c;
     --code-comment: #a3adb8;
     --code-keyword: #8fb0e8;
     --code-string: #a9c27a;
