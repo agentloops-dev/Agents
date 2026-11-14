@@ -101,7 +101,7 @@ var events = append([]event{
 		})},
 	// A deploy held by a GitHub environment with required reviewers (#3587).
 	{Name: "deploy.waiting", Title: "Deploy waiting for approval",
-		Description: "A GitHub Actions run is waiting for a reviewer of an environment with required reviewers, as a release.yml job with environment: production: one event per run, attempt and set of environments, so the next environment it waits on is a new one. canApprove says whether the GitHub account this server is connected as is one of its reviewers; Agents lists it in Needs You for them, with Approve and Reject. Only runs from the repo itself, started by a person, never a bot, unless anyone is true.",
+		Description: "A GitHub Actions run is waiting for a reviewer of an environment with required reviewers, as a release.yml job with environment: production: one event per run, attempt and set of environments, so the next environment it waits on is a new one. canApprove says whether the GitHub account this server is connected as is one of its reviewers; Agents lists it in Needs You for them, with Approve and Reject. deploy, component, environment and tier are the wire's DeployEvent of the GitHub Deployment that waits (state waiting), as deploy.started says it, when GitHub has made it: the first of environments that has one. Only runs from the repo itself, started by a person, never a bot, unless anyone is true.",
 		Input: schema{repoProperty,
 			property{Name: "workflow", Kind: "string", Description: "Only runs of this workflow, by its file name, as release.yml.",
 				Pattern: regexp.MustCompile(`^[A-Za-z0-9_.-]+\.ya?ml$`), LooksLike: "release.yml"},
@@ -113,6 +113,9 @@ var events = append([]event{
 			"reviewers":    map[string]any{"type": "array", "items": str},
 			"canApprove":   map[string]any{"type": "boolean"},
 			"waitingSince": str,
+			// The wire's DeployEvent of the Deployment that waits (#5407).
+			"deploy":    map[string]any{"type": "object"},
+			"component": str, "environment": str, "tier": tierSchema,
 		})},
 	deployEvent("deploy.started", "Deploy started",
 		"A GitHub Deployment went running (queued or in_progress): a job with environment: began to deploy, whatever started its run. One event per Deployment, so a queued after in_progress is no new one."),
@@ -611,7 +614,7 @@ func candidates(ctx context.Context, gh GitHub, name string, a args, yours *Your
 				continue
 			}
 			list = append(list, candidate{EventID: "deploy.waiting:" + repo + ":" + w.key(), Time: at,
-				Data:    func() (map[string]any, error) { return w.data(), nil },
+				Data:    func() (map[string]any, error) { return waitingData(ctx, gh, repo, w) },
 				Subject: runRef(repo, w.Run.Run.ID), Key: strings.TrimPrefix(w.key(), fmt.Sprint(w.Run.Run.ID)+":")})
 		}
 		return list, false, nil
