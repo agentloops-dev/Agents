@@ -48,6 +48,7 @@ struct MachinePage: View {
 
             ScrollViewReader { proxy in
                 Form {
+                    MachineSessionsSection(host: host)
                     if offline {
                         Section {
                             Text("\(name) is offline, so it can’t say how it is doing now.")
@@ -340,10 +341,13 @@ struct MachineRow: View {
         let name = model.hosts.label(host)
         let row = model.hosts.controlRows[host]
         let need = model.need(of: host)
-        let words = need.map { MachineNeedWords.line($0, name: name, row: row) }
+        let state = need.map { MachineNeedWords.line($0, name: name, row: row) }
+        // Under an online machine with no state line: how many sessions run there (#5489).
         let actions = MachineRowActions.of(row, isThisMac: host == .mac)
         let dot = MachineDot.of(row, online: !model.hostUnreachable(host),
                                 starting: model.hostsBeingStarted.contains(host))
+        let online = dot == .online && !model.diskWarns(host)
+        let words = state ?? (online ? model.machineSessions(host).runningLine : nil)
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             // A laptop, a cloud or a rack, in its state's colour (#4113): the row has no dot.
             MachineIconView(symbol: MachineIcon.symbol(isThisMac: host == .mac, row: row),
@@ -361,7 +365,7 @@ struct MachineRow: View {
             }
             Spacer(minLength: 4)
         }
-        .help(words.map { "\(name): \($0)" } ?? (model.diskWarns(host)
+        .help(state.map { "\(name): \($0)" } ?? (model.diskWarns(host)
             ? "\(name): a disk is low. Its CPU, memory, disks, worktrees, runtimes and resources"
             : "\(name): its CPU, memory, disks, worktrees, runtimes and resources"))
         .accessibilityElement(children: .contain)
@@ -514,6 +518,11 @@ enum MachineSheet: String, Identifiable {
 extension AppModel {
     /// A machine's most urgent need, as its row says it (#3764). Sign-in is what its runtimes
     /// last said: This Mac's are always read, a server's when its page was opened.
+    /// The machine's sessions, counted once for its sidebar line and its page (#5489, #5488).
+    func machineSessions(_ host: MachineRef) -> MachineSessions {
+        MachineSessions(work.agents.filter { $0.host == host })
+    }
+
     func need(of host: MachineRef) -> MachineNeed? {
         MachineNeed.most(row: hosts.controlRows[host], offline: hostUnreachable(host),
                          runtimes: runtimes(on: host), disks: diskAlarms(host), capacity: capacityLevel(host))
