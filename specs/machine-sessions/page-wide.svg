@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="520" viewBox="0 0 760 520" font-family="-apple-system, 'SF Pro Text', Helvetica, sans-serif"><style>.ink{fill:#1F1D1A}.sec{fill:#6F6A62}.h{font-size:11px;font-weight:600;letter-spacing:.4px;fill:#6F6A62}.r{font-size:14px;fill:#1F1D1A}.f{font-size:12px;fill:#6F6A62}.note{font-size:12px;fill:#b0006a;font-style:italic}.b{font-size:14px;font-weight:600;fill:#1F1D1A}</style>
+<rect x="0.5" y="0.5" width="759" height="519" rx="12" fill="#FBF9F4" stroke="#E2DCCF"/>
+<text x="24" y="42" class="b" font-size="20">machine-29</text><text x="24" y="62" class="f">Online · 11 sessions · 1 running</text>
+<text x="24" y="100" class="h">SESSIONS</text>
+<text x="24" y="124" class="f">WORKING · 1</text>
+<line x1="24" y1="132" x2="736" y2="132" stroke="#E2DCCF"/>
+<circle cx="32" cy="154" r="5" fill="#3E8E5A"/><text x="48" y="158" class="r">Reports: remove group lens and Report Policy group rules</text><text x="736" y="158" text-anchor="end" class="f">Claude · agents/work-github-issue-5278 · now</text>
+<text x="24" y="196" class="f">WAITING · 9</text>
+<line x1="24" y1="204" x2="736" y2="204" stroke="#E2DCCF"/>
+<circle cx="32" cy="226" r="5" fill="#C98A1B"/><text x="48" y="230" class="r">#5473 conflict-risk.sh: advise go, wait or stack</text><text x="736" y="230" text-anchor="end" class="f">Auto · agents/… · 4 min ago</text>
+<circle cx="32" cy="256" r="5" fill="#C98A1B"/><text x="48" y="260" class="r">#5458 New Session suggestions daemon ranking</text><text x="736" y="260" text-anchor="end" class="f">Claude · agents/work-github-issue-5458 · 27 min ago</text>
+<text x="48" y="292" class="f">… 7 more</text>
+<text x="24" y="328" class="f">DONE · 1</text>
+<line x1="24" y1="336" x2="736" y2="336" stroke="#E2DCCF"/>
+<circle cx="32" cy="358" r="5" fill="none" stroke="#6F6A62" stroke-width="1.4"/><text x="48" y="362" class="r">Pull Requests change files full page</text><text x="736" y="362" text-anchor="end" class="f">Claude · 1 min ago</text>
+<text x="24" y="410" class="h">CPU, MEMORY, DISKS, WORKTREES … (as today)</text>
+<text x="24" y="500" class="f">Last update 10:42 am</text>
+<text x="400" y="100" class="note">New: first section, above today's CPU/memory/disks.</text>
+<text x="400" y="290" class="note">Rows grouped by status; a row opens its session.</text>
+<text x="400" y="480" class="note">Non-archived only; archived sessions never listed.</text>
+</svg>
