@@ -57,6 +57,16 @@ it is done, **Runtimes** says Claude is installing. Codex installs the same way
 when you click **Install** under **Runtimes**. The server needs glibc 2.28 or later. Alpine
 (musl) can't run them.
 
+### Set the machine up with one command
+
+`agentsd install --join '<host code>'` is the one installer. Run it on the machine, by hand or through any channel that reaches it (ssh, `docker exec`, `gh codespace ssh`). It does steps 3 to 6 of a machine's set-up, and says each step to the control plane as it ends, so the machine's page shows them:
+
+1. **Install Agents:** puts this host in `~/.agents-server`, starts it (a systemd user service where there is systemd, else in the background) and waits until it has joined.
+2. **Compare digits:** the host joined with a code the control plane made for it.
+3. **Install runtimes** (Claude and Codex, or each `--runtime <id>`) and **send projects**, at the same time. For each `--project <folder>` on the machine, a script `.agents/setup.sh` in the project runs with `bash -e`, as the machine's user, in the folder, with `AGENTS_SETUP=1`, `AGENTS_PROJECT`, `AGENTS_MACHINE` and `AGENTS_FROM_POOL` (`1` with `--from-pool`) and no credentials, for up to 10 minutes. Its exit code is the result, and its last lines are shown when it fails. Write it so that it is safe to run again.
+
+Run it again and it does only what is missing: a host that runs and has joined is left alone. That is also how **Try Again** works. It runs no cloud-init and no systemd one-shot units, so it works in a Docker container too.
+
 ### Or let it ask to join
 
 A server can join with no code, by your approval (#994). In **Settings ▸ People**, copy the

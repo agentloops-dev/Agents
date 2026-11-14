@@ -174,6 +174,8 @@ To delete one, choose **Delete Machine…** in its server's `···` menu on Set
 Agent Loops names what is lost first: the machine, everything on its disk, and the server with
 its agents.
 
+A machine that Agent Loops makes is set up by the same installer you can run yourself: `agentsd install --join`, described in [Add a machine](add-a-machine.md#set-the-machine-up-with-one-command). It runs the projects' `.agents/setup.sh` and says each step as it ends.
+
 ## Let an agent start a session on another machine
 
 Some work has to run on a particular machine, such as a bug that only shows on the PC. An
