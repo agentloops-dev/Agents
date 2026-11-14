@@ -247,8 +247,24 @@ function Control({ id, row, rule, folder, yours, editable, set }: { id: string; 
   // The reason on a dimmed value, but not on the layer's own, whose cap line is under the row.
   const reason = (v: JSONValue) => isLooser(row, v, rule?.cap) && rule?.capLine && v !== yours ? ` — ${rule.capLine}` : "";
   switch (row.kind.kind) {
-    case "choice":
-    case "count": {
+    case "count":
+      // A number of things (helpers, workflows, notices) is a whole number to type or step, with no top but the cap's
+      // (#5343); the cool-down, whose values are presets, stays a menu.
+      if (!row.kind.higherIsTighter) {
+        const cap = typeof rule?.cap === "number" ? rule.cap : undefined;
+        return (
+          <input id={id} type="number" inputMode="numeric" min={1} step={1} max={cap} disabled={!editable}
+            placeholder={unset} value={yours === undefined ? "" : String(yours)}
+            onChange={(e) => {
+              const raw = e.currentTarget.value.trim();
+              if (raw === "") { set(undefined); return; }
+              const n = Number(raw);
+              if (Number.isInteger(n) && n >= 1 && !isLooser(row, n, rule?.cap)) set(n);
+            }} />
+        );
+      }
+    // falls through
+    case "choice": {
       const values: JSONValue[] = row.kind.kind === "choice" ? row.kind.order : row.kind.numbers;
       const all = typeof yours === "number" && !values.includes(yours) ? [...values, yours].sort((a, b) => Number(a) - Number(b)) : values;
       const words = (v: JSONValue) => row.kind.kind === "choice" ? choice(row.rule, String(v)) : count(row.rule, Number(v));

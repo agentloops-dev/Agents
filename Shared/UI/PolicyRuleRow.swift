@@ -53,6 +53,9 @@ struct PolicyRuleRow: View {
         switch row.kind {
         case .choice(let order):
             menu(order.map { JSONValue.string($0) }) { PolicyLayersWords.choice(row.rule, $0.stringValue ?? "") }
+        case .count(_, higherIsTighter: false):
+            // A number of things has no top but the cap's (#5343): a stepper, not a list of values.
+            countStepper
         case .count(let numbers, _):
             menu(countChoices(numbers)) { PolicyLayersWords.count(row.rule, $0.intValue ?? 0) }
         case .money:
@@ -78,6 +81,29 @@ struct PolicyRuleRow: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    /// The most a layer above allows: a value over it is looser, so the stepper stops there.
+    private var capLimit: Int { rule?.cap?.intValue ?? Int.max }
+
+    /// What the rule is when nothing sets it, read from its words ("5"), or 1.
+    private var defaultCount: Int { min(Int(row.unset) ?? 1, capLimit) }
+
+    /// A whole number to step or type, from 1 to the cap, and **Not set** to leave it to the layers
+    /// above and the default.
+    private var countStepper: some View {
+        HStack(spacing: 8) {
+            if yours != nil {
+                Button(notSetWords) { set(nil) }.buttonStyle(.borderless).appText(.fine)
+            }
+            Stepper(value: Binding(get: { yours?.intValue ?? defaultCount },
+                                   set: { set(.int($0)) }), in: 1...capLimit) {
+                Text(yours?.intValue.map { PolicyLayersWords.count(row.rule, $0) } ?? "\(notSetWords) (\(row.unset))")
+                    .monospacedDigit()
+            }
+            .fixedSize()
+        }
+        .disabled(!editable)
     }
 
     /// The numbers a menu offers, and your own value when it is none of them.
