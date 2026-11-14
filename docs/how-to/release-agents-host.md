@@ -29,7 +29,7 @@ the App Store. Pushing a version tag on main publishes a release. The tag starts
   `Agents-<version>.zip` named `Agents.app`, and the app in `Agents-Host-<version>.zip`
   named `Agents Host.app`;
 - in its `image` job, builds the control plane's image for `linux/amd64` and `linux/arm64`
-  and pushes it to `ghcr.io/alexec/agents-control` as `<version>`, `<major>.<minor>` and
+  and pushes it to `ghcr.io/agentloops-dev/agents-control` as `<version>`, `<major>.<minor>` and
   `latest`, with an SBOM and provenance, and signs it with cosign, keyless (#2140). It uses
   the workflow's own token: there is no secret to set. The release is not published unless
   the image pushed;

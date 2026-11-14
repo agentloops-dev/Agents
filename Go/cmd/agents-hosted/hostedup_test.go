@@ -134,7 +134,7 @@ func TestHostedUpRunsTheImageItBuiltAndPrunes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(compose), "image: ghcr.io/alexec/agents-control:${AGENTS_VERSION:-latest}") {
+	if !strings.Contains(string(compose), "image: ghcr.io/agentloops-dev/agents-control:${AGENTS_VERSION:-latest}") {
 		t.Fatal("compose.hosted.yaml names another image; change the test and hosted-up.sh with it")
 	}
 	env := ready(t)
@@ -143,7 +143,7 @@ func TestHostedUpRunsTheImageItBuiltAndPrunes(t *testing.T) {
 	if err != nil {
 		t.Fatal(out, err)
 	}
-	image := "ghcr.io/alexec/agents-control:0.15.0-abc123"
+	image := "ghcr.io/agentloops-dev/agents-control:0.15.0-abc123"
 	build := strings.Index(out, "docker build --platform linux/amd64 --build-arg VERSION=0.15.0+abc123")
 	save := strings.Index(out, "docker save "+image+" ")
 	healthz := strings.Index(out, "/healthz")

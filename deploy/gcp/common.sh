@@ -25,9 +25,9 @@ snapshot_start=10:00
 dry_run=0
 project=''
 vm_account=''
-# The control plane's image (#2140): a release pushes ghcr.io/alexec/agents-control:X.Y.Z, and
+# The control plane's image (#2140): a release pushes ghcr.io/agentloops-dev/agents-control:X.Y.Z, and
 # up.sh --build tags its own build the same way.
-image=ghcr.io/alexec/agents-control
+image=ghcr.io/agentloops-dev/agents-control
 build=0
 
 say() { printf '%s\n' "$*"; }
